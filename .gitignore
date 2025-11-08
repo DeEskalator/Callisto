@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+cdk.out/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Deployment settings of a concrete practice (domain, admin e-mail); see infra/config.example.json
+infra/config.json
