@@ -1,0 +1,27 @@
+{
+  "name": "@callisto/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "REST-API für die Weboberfläche (Lambda-Funktionen hinter API Gateway)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.29.0",
+    "@aws-lambda-powertools/metrics": "^2.29.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.940.0",
+    "@aws-sdk/client-eventbridge": "^3.940.0",
+    "@callisto/data": "*",
+    "@callisto/domain": "*",
+    "@hono/zod-validator": "^0.7.5",
+    "hono": "^4.10.7",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.159"
+  }
+}
