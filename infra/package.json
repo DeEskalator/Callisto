@@ -1,0 +1,25 @@
+{
+  "name": "@callisto/infra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS-Infrastruktur als CDK-App",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "cdk": "cdk",
+    "synth": "cdk synth --quiet",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy --all"
+  },
+  "dependencies": {
+    "@callisto/domain": "*",
+    "aws-cdk-lib": "^2.232.1",
+    "constructs": "^10.4.3",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1033.0",
+    "cdk-nag": "^2.37.55",
+    "esbuild": "^0.27.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "stage": "dev",
+  "region": "eu-central-1",
+  "production": false,
+  "practice": {
+    "id": "main",
+    "name": "Praxis Beispiel",
+    "federalState": "NW",
+    "adminEmail": "admin@example.com",
+    "adminName": "Administration"
+  },
+  "devOrigins": ["http://localhost:5173"],
+  "waf": false
+}
