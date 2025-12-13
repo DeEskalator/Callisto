@@ -8,4 +8,5 @@ export * from './opening-state';
 export * from './practice';
 export * from './scheduling';
 export * from './slot-generation';
+export * from './slot-plan';
 export * from './time';
