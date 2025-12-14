@@ -41,3 +41,28 @@ export const practiceUsersPk = (practiceId: string) => `PRACTICE#${practiceId}#U
 
 export const auditPk = (practiceId: string, month: string) =>
   `PRACTICE#${practiceId}#AUDIT#${month}`;
+
+/** One partition per day keeps a day's calendar in a single query. */
+export const slotKey = (
+  practiceId: string,
+  slot: { id: string; date: string; startTime: string },
+) => ({
+  PK: `PRACTICE#${practiceId}#SLOTS#${slot.date}`,
+  SK: `${slot.startTime}#${slot.id}`,
+});
+export const slotDayPk = (practiceId: string, date: string) =>
+  `PRACTICE#${practiceId}#SLOTS#${date}`;
+
+/**
+ * Index entry that only free slots carry. Booking a slot removes it, so "the next free slots of a
+ * category" is one index query that never has to skip over booked ones.
+ */
+export const freeSlotIndexKey = (
+  practiceId: string,
+  slot: { id: string; categoryId: string; date: string; startTime: string },
+) => ({
+  GSI1PK: freeSlotsPk(practiceId, slot.categoryId),
+  GSI1SK: `${slot.date}T${slot.startTime}#${slot.id}`,
+});
+export const freeSlotsPk = (practiceId: string, categoryId: string) =>
+  `PRACTICE#${practiceId}#FREE#${categoryId}`;
