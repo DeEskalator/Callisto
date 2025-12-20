@@ -1,43 +1,12 @@
 import { DEFAULT_OPENING_HOURS } from '@callisto/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAdminApp } from '../src/admin/app';
-import {
-  bodyOf,
-  FakeAuditStore,
-  FakeConfigStore,
-  FakeUserStore,
-  jsonRequest,
-  PRACTICE_ID,
-  signedInAs,
-  silentLogger,
-} from './fakes';
-
-// Every test uses its own user ids because resolved users are cached per Lambda instance.
-let run = 0;
-
-function setup() {
-  run += 1;
-  const config = new FakeConfigStore();
-  const users = new FakeUserStore();
-  const audit = new FakeAuditStore();
-  const app = createAdminApp({
-    config,
-    users,
-    audit,
-    allowedOrigins: ['https://app.praxis.test'],
-    logger: silentLogger,
-  });
-  const admin = users.add(`admin-${run}`, 'admin');
-  const staff = users.add(`staff-${run}`, 'staff');
-  const call = (userId: string | undefined, path: string, init?: RequestInit) =>
-    app.request(`/v1${path}`, init, signedInAs(userId));
-  return { config, users, audit, admin, staff, call };
-}
+import { setupAdminApp } from './admin-setup';
+import { bodyOf, jsonRequest, PRACTICE_ID } from './fakes';
 
 describe('admin API', () => {
-  let ctx: ReturnType<typeof setup>;
+  let ctx: ReturnType<typeof setupAdminApp>;
   beforeEach(() => {
-    ctx = setup();
+    ctx = setupAdminApp();
   });
 
   describe('access', () => {
@@ -50,7 +19,7 @@ describe('admin API', () => {
     it('rejects accounts that have no profile or are disabled', async () => {
       expect((await ctx.call('stranger', '/config')).status).toBe(403);
 
-      const disabled = ctx.users.add(`disabled-${run}`, 'admin', { status: 'disabled' });
+      const disabled = ctx.users.add(`disabled-${ctx.run}`, 'admin', { status: 'disabled' });
       expect((await ctx.call(disabled, '/config')).status).toBe(403);
     });
 

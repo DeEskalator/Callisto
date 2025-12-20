@@ -3,6 +3,7 @@ import {
   AuditRepository,
   ConfigRepository,
   createDocumentClient,
+  SlotRepository,
   UserRepository,
 } from '@callisto/data';
 import { handle } from 'hono/aws-lambda';
@@ -15,6 +16,7 @@ const planningTable = requireEnv('PLANNING_TABLE');
 const app = createAdminApp({
   config: new ConfigRepository(doc, planningTable),
   users: new UserRepository(doc, planningTable),
+  slots: new SlotRepository(doc, planningTable),
   audit: new AuditRepository(doc, planningTable),
   allowedOrigins: requireEnv('ALLOWED_ORIGINS').split(','),
   logger: new Logger(),

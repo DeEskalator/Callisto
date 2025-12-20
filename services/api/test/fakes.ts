@@ -5,6 +5,7 @@ import type {
   ConfigCollection,
   ConfigStore,
   PracticeConfig,
+  SlotStore,
   UserStore,
 } from '@callisto/data';
 import {
@@ -16,6 +17,8 @@ import {
   defaultPracticeSettings,
   type OpeningHours,
   type PracticeSettings,
+  type Slot,
+  type SlotStatus,
   type UserProfile,
 } from '@callisto/domain';
 import type { UserDirectory } from '../src/users/directory';
@@ -142,6 +145,93 @@ export class FakeUserStore implements UserStore {
       ...overrides,
     });
     return id;
+  }
+}
+
+export class FakeSlotStore implements SlotStore {
+  /** Slots by practice and slot id. */
+  readonly slots = new Map<string, Slot>();
+
+  private key(practiceId: string, slotId: string) {
+    return `${practiceId}/${slotId}`;
+  }
+
+  private ofPractice(practiceId: string): Slot[] {
+    return [...this.slots.entries()]
+      .filter(([key]) => key.startsWith(`${practiceId}/`))
+      .map(([, slot]) => slot)
+      .sort((left, right) => left.id.localeCompare(right.id));
+  }
+
+  async listDay(practiceId: string, date: string) {
+    return this.ofPractice(practiceId).filter((slot) => slot.date === date);
+  }
+
+  async listRange(practiceId: string, from: string, to: string) {
+    return this.ofPractice(practiceId).filter((slot) => slot.date >= from && slot.date <= to);
+  }
+
+  async get(practiceId: string, slotId: string) {
+    return this.slots.get(this.key(practiceId, slotId));
+  }
+
+  async findFree(
+    practiceId: string,
+    categoryId: string,
+    from: { date: string; time: string },
+    limit: number,
+  ) {
+    return this.ofPractice(practiceId)
+      .filter(
+        (slot) =>
+          slot.status === 'free' &&
+          slot.categoryId === categoryId &&
+          `${slot.date}T${slot.startTime}` >= `${from.date}T${from.time}`,
+      )
+      .slice(0, limit);
+  }
+
+  async create(practiceId: string, slots: Slot[]) {
+    const missing = slots.filter((slot) => !this.slots.has(this.key(practiceId, slot.id)));
+    for (const slot of missing) {
+      this.slots.set(this.key(practiceId, slot.id), slot);
+    }
+    return missing.length;
+  }
+
+  async replaceFree(practiceId: string, slots: Slot[]) {
+    const replaceable = slots.filter((slot) => {
+      const current = this.slots.get(this.key(practiceId, slot.id));
+      return !current || current.status === 'free';
+    });
+    for (const slot of replaceable) {
+      this.slots.set(this.key(practiceId, slot.id), slot);
+    }
+    return replaceable.length;
+  }
+
+  async deleteUnbooked(practiceId: string, slots: Array<Pick<Slot, 'id' | 'date' | 'startTime'>>) {
+    const unbooked = slots.filter(
+      (slot) => this.slots.get(this.key(practiceId, slot.id))?.status !== 'booked',
+    );
+    for (const slot of unbooked) {
+      this.slots.delete(this.key(practiceId, slot.id));
+    }
+    return unbooked.length;
+  }
+
+  async changeStatus(practiceId: string, slot: Slot, to: SlotStatus, inquiryId?: string) {
+    const current = this.slots.get(this.key(practiceId, slot.id));
+    if (!current || current.status !== slot.status) {
+      return false;
+    }
+    const { inquiryId: _previous, ...rest } = current;
+    this.slots.set(this.key(practiceId, slot.id), {
+      ...rest,
+      status: to,
+      ...(to === 'booked' && inquiryId ? { inquiryId } : {}),
+    });
+    return true;
   }
 }
 

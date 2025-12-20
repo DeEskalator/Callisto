@@ -1,10 +1,20 @@
-import { Aws, CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
+import {
+  Aws,
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  type StackProps,
+  TimeZone,
+} from 'aws-cdk-lib';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import type * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as scheduler from 'aws-cdk-lib/aws-scheduler';
+import * as schedulerTargets from 'aws-cdk-lib/aws-scheduler-targets';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import * as triggers from 'aws-cdk-lib/triggers';
 import type { Construct } from 'constructs';
@@ -119,10 +129,33 @@ export class ApiStack extends Stack {
 
     const adminApi = new ServiceFunction(this, 'AdminApi', {
       entry: 'services/api/src/admin/handler.ts',
-      description: 'Practice configuration: settings, opening hours, closures, presets, categories',
+      description: 'Practice configuration and planning: settings, hours, closures, presets, slots',
       environment,
+      // Changes that re-derive the slots of the whole booking horizon take a moment; this is
+      // API Gateway's own limit for a request.
+      timeout: Duration.seconds(29),
     });
     data.planningTable.grantReadWriteData(adminApi);
+
+    const nightlySlots = new ServiceFunction(this, 'NightlySlots', {
+      entry: 'services/api/src/scheduling/nightly.ts',
+      description: 'Extends the bookable slots by one day every night',
+      environment: {
+        PLANNING_TABLE: data.planningTable.tableName,
+        PRACTICE_ID: config.practice.id,
+      },
+      timeout: Duration.minutes(2),
+    });
+    data.planningTable.grantReadWriteData(nightlySlots);
+    new scheduler.Schedule(this, 'NightlySlotsSchedule', {
+      description: 'Callisto: nightly slot generation',
+      schedule: scheduler.ScheduleExpression.cron({
+        hour: '2',
+        minute: '30',
+        timeZone: TimeZone.EUROPE_BERLIN,
+      }),
+      target: new schedulerTargets.LambdaInvoke(nightlySlots, { retryAttempts: 2 }),
+    });
 
     const usersApi = new ServiceFunction(this, 'UsersApi', {
       entry: 'services/api/src/users/handler.ts',
@@ -151,6 +184,8 @@ export class ApiStack extends Stack {
       closures: adminApi,
       presets: adminApi,
       categories: adminApi,
+      'slot-templates': adminApi,
+      slots: adminApi,
       audit: adminApi,
       me: usersApi,
       users: usersApi,
