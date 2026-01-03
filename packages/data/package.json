@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.936.0",
-    "@aws-sdk/lib-dynamodb": "^3.936.0",
+    "@aws-sdk/client-dynamodb": "^3.962.0",
+    "@aws-sdk/lib-dynamodb": "^3.962.0",
     "@callisto/domain": "*"
   }
 }
