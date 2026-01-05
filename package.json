@@ -22,7 +22,9 @@
     "check": "npm run lint && npm run typecheck && npm run test",
     "synth": "npm run synth --workspace infra",
     "diff": "npm run diff --workspace infra",
-    "deploy": "npm run deploy --workspace infra"
+    "deploy": "npm run deploy --workspace infra",
+    "dev:api": "npm run dev --workspace @callisto/api",
+    "dev:web": "npm run dev --workspace @callisto/web"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

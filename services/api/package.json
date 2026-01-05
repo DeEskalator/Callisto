@@ -5,10 +5,12 @@
   "description": "REST-API für die Weboberfläche (Lambda-Funktionen hinter API Gateway)",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./routes": "./src/routes.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/dev/server.ts"
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.30.0",

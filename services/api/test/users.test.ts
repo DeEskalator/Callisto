@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createUsersApp } from '../src/users/app';
 import {
   bodyOf,
-  FakeAuditStore,
-  FakeConfigStore,
-  FakeUserDirectory,
-  FakeUserStore,
   jsonRequest,
+  MemoryAuditStore,
+  MemoryUserDirectory,
   signedInAs,
   silentLogger,
+  TestUserStore,
+  testConfigStore,
 } from './fakes';
 
 // Every test uses its own user ids because resolved users are cached per Lambda instance.
@@ -16,13 +16,13 @@ let run = 0;
 
 function setup() {
   run += 1;
-  const config = new FakeConfigStore();
-  const users = new FakeUserStore();
-  const directory = new FakeUserDirectory();
+  const config = testConfigStore();
+  const users = new TestUserStore();
+  const directory = new MemoryUserDirectory();
   const app = createUsersApp({
     config,
     users,
-    audit: new FakeAuditStore(),
+    audit: new MemoryAuditStore(),
     directory,
     allowedOrigins: ['https://app.praxis.test'],
     logger: silentLogger,

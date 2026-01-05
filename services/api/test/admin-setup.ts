@@ -1,11 +1,11 @@
 import { createAdminApp } from '../src/admin/app';
 import {
-  FakeAuditStore,
-  FakeConfigStore,
-  FakeSlotStore,
-  FakeUserStore,
+  MemoryAuditStore,
+  MemorySlotStore,
   signedInAs,
   silentLogger,
+  TestUserStore,
+  testConfigStore,
 } from './fakes';
 
 // Resolved users are cached per Lambda instance, i.e. across tests. Giving every test its own
@@ -15,10 +15,10 @@ let run = 0;
 /** A fresh admin app on in-memory stores, with one administrator and one staff member. */
 export function setupAdminApp() {
   run += 1;
-  const config = new FakeConfigStore();
-  const users = new FakeUserStore();
-  const slots = new FakeSlotStore();
-  const audit = new FakeAuditStore();
+  const config = testConfigStore();
+  const users = new TestUserStore();
+  const slots = new MemorySlotStore();
+  const audit = new MemoryAuditStore();
   const app = createAdminApp({
     config,
     users,

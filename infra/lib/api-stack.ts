@@ -1,3 +1,4 @@
+import { API_ROUTES, type ApiFunctionName } from '@callisto/api/routes';
 import {
   Aws,
   CfnOutput,
@@ -175,25 +176,15 @@ export class ApiStack extends Stack {
 
     // ── Routes ───────────────────────────────────────────────────────────────
 
-    // First path segment below /v1 and the function that serves it, including all sub-paths.
-    const routes: Record<string, lambda.IFunction> = {
-      config: adminApi,
-      status: adminApi,
-      settings: adminApi,
-      'opening-hours': adminApi,
-      closures: adminApi,
-      presets: adminApi,
-      categories: adminApi,
-      'slot-templates': adminApi,
-      slots: adminApi,
-      audit: adminApi,
-      me: usersApi,
+    const functions: Record<ApiFunctionName, lambda.IFunction> = {
+      admin: adminApi,
       users: usersApi,
-      roles: usersApi,
     };
     const v1 = this.api.root.addResource('v1');
-    for (const [segment, handler] of Object.entries(routes)) {
-      const integration = new apigw.LambdaIntegration(handler, { allowTestInvoke: false });
+    for (const [segment, functionName] of Object.entries(API_ROUTES)) {
+      const integration = new apigw.LambdaIntegration(functions[functionName], {
+        allowTestInvoke: false,
+      });
       const resource = v1.addResource(segment);
       resource.addMethod('ANY', integration, methodOptions);
       resource.addProxy({
