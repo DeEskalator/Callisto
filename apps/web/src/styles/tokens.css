@@ -1,0 +1,85 @@
+/*
+ * Design tokens. Components only use these variables, never literal colours or sizes, so the
+ * dark theme is a second set of values and nothing else.
+ */
+:root {
+  color-scheme: light;
+
+  --font-ui: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size: 13px;
+  --font-size-small: 12px;
+  --font-size-title: 15px;
+
+  /* Desktop density: compact rows and controls. */
+  --row-height: 28px;
+  --control-height: 26px;
+  --menubar-height: 30px;
+  --toolbar-height: 38px;
+  --statusbar-height: 24px;
+  --radius: 4px;
+  --radius-large: 8px;
+
+  --chrome: #eceef1;
+  --chrome-border: #cdd2d8;
+  --surface: #ffffff;
+  --surface-alt: #f6f7f9;
+  --border: #dde0e5;
+  --border-strong: #bfc5cd;
+
+  --text: #1b1e23;
+  --text-muted: #59616d;
+  --text-faint: #8a919c;
+
+  --accent: #1f5fbf;
+  --accent-hover: #1a51a4;
+  --accent-contrast: #ffffff;
+  --accent-soft: #d9e6fb;
+  --selection-inactive: #e5e8ed;
+  --hover: #edf0f4;
+
+  --danger: #b3261e;
+  --danger-hover: #991f18;
+  --danger-soft: #fbe9e7;
+  --success: #1a7f4b;
+  --success-soft: #e2f4ea;
+  --warning: #915500;
+  --warning-soft: #fdf0d5;
+
+  --overlay: rgb(20 24 31 / 0.32);
+  --shadow-menu: 0 8px 28px rgb(15 20 30 / 0.16), 0 0 0 1px rgb(15 20 30 / 0.09);
+  --shadow-dialog: 0 20px 64px rgb(15 20 30 / 0.3), 0 0 0 1px rgb(15 20 30 / 0.1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --chrome: #25282d;
+  --chrome-border: #3a3f46;
+  --surface: #1b1d21;
+  --surface-alt: #212428;
+  --border: #33373e;
+  --border-strong: #4a505a;
+
+  --text: #e6e8ec;
+  --text-muted: #a2a9b4;
+  --text-faint: #767d88;
+
+  --accent: #5b9cf5;
+  --accent-hover: #7cb0f8;
+  --accent-contrast: #0d1420;
+  --accent-soft: #24406b;
+  --selection-inactive: #30343b;
+  --hover: #2b2f35;
+
+  --danger: #f2756b;
+  --danger-hover: #f6958d;
+  --danger-soft: #4a2320;
+  --success: #5ac48a;
+  --success-soft: #1d3a2a;
+  --warning: #e0a94a;
+  --warning-soft: #40321a;
+
+  --overlay: rgb(0 0 0 / 0.5);
+  --shadow-menu: 0 8px 28px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.1);
+  --shadow-dialog: 0 20px 64px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.1);
+}

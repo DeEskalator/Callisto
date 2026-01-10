@@ -10,3 +10,6 @@ cdk.out/
 
 # Deployment settings of a concrete practice (domain, admin e-mail); see infra/config.example.json
 infra/config.json
+
+# Playwright output
+.playwright-mcp/
