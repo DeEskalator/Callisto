@@ -1,0 +1,342 @@
+/* The application window: menu bar, workspace (navigation | view | inspector), status bar. */
+
+.app {
+  display: grid;
+  grid-template-rows: var(--menubar-height) minmax(0, 1fr) var(--statusbar-height);
+  height: 100%;
+}
+
+/* ── Menu bar ─────────────────────────────────────────────────────────────── */
+
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--chrome-border);
+  background: var(--chrome);
+}
+.menubar__brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 10px;
+  font-weight: 600;
+}
+.menubar__brand img {
+  width: 16px;
+  height: 16px;
+}
+.menubar__menus {
+  display: flex;
+  gap: 1px;
+}
+.menubar__trigger {
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  cursor: default;
+}
+.menubar__trigger:hover,
+.menubar__trigger[data-highlighted],
+.menubar__trigger[data-state="open"] {
+  background: var(--selection-inactive);
+}
+.menubar__spacer {
+  flex: 1;
+}
+.menubar__practice {
+  margin-right: 8px;
+  color: var(--text-muted);
+}
+.menubar__user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 6px 0 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  cursor: default;
+}
+.menubar__user:hover,
+.menubar__user[data-state="open"] {
+  background: var(--selection-inactive);
+}
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Workspace ────────────────────────────────────────────────────────────── */
+
+.workspace {
+  min-height: 0;
+}
+.pane-separator {
+  position: relative;
+  flex: none;
+  width: 1px;
+  background: var(--chrome-border);
+  outline: none;
+}
+/* A wider invisible hit area around the hairline. */
+.pane-separator::after {
+  content: "";
+  position: absolute;
+  inset: 0 -3px;
+}
+.pane-separator:hover,
+.pane-separator:focus-visible,
+.pane-separator[data-separator="active"] {
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────────── */
+
+.nav {
+  height: 100%;
+  padding: 6px 0 12px;
+  overflow: auto;
+  background: var(--chrome);
+}
+.nav__group {
+  padding: 12px 14px 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 27px;
+  margin: 0 6px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: default;
+}
+.nav__item svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+.nav__item:hover {
+  background: var(--hover);
+}
+.nav__item[aria-current="page"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.nav__item[aria-current="page"] svg {
+  color: inherit;
+}
+.nav__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav__badge {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ── View ─────────────────────────────────────────────────────────────────── */
+
+.view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--surface);
+}
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: var(--toolbar-height);
+  padding: 0 10px 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+.toolbar__title {
+  margin-right: 14px;
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.toolbar__separator {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--border-strong);
+}
+.toolbar__spacer {
+  flex: 1;
+}
+.view__content {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  /* Lets page-like views arrange themselves by the width of the pane, not of the window. */
+  container-type: inline-size;
+}
+.view__split {
+  flex: 1;
+  min-height: 0;
+}
+.view__content--padded {
+  padding: 20px 24px 32px;
+}
+.view__intro {
+  max-width: 68ch;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  user-select: text;
+}
+.view__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+/* ── Inspector (detail pane) ──────────────────────────────────────────────── */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+}
+/* Same height and look as a table header, so the two line up across the split. */
+.inspector__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: calc(var(--row-height) + 1px);
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.inspector__body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+  user-select: text;
+}
+.inspector__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  color: var(--text-faint);
+  text-align: center;
+}
+.props {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 7px 14px;
+  margin: 0;
+}
+.props dt {
+  color: var(--text-muted);
+}
+.props dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.inspector__section {
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.inspector__section:first-child {
+  margin-top: 0;
+}
+
+/* ── Status bar ───────────────────────────────────────────────────────────── */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px;
+  border-top: 1px solid var(--chrome-border);
+  background: var(--chrome);
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+}
+.statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.statusbar__divider {
+  width: 1px;
+  height: 12px;
+  background: var(--chrome-border);
+}
+.statusbar__spacer {
+  flex: 1;
+}
+
+/* ── Full-window states (loading, sign-in, errors) ────────────────────────── */
+
+.splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.splash__title {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+}
+.splash__text {
+  max-width: 46ch;
+  user-select: text;
+}
