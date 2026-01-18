@@ -44,6 +44,11 @@ export function weekdayOf(date: LocalDate): Weekday {
   return WEEKDAYS[index] as Weekday;
 }
 
+/** The later of two dates. They are ISO strings, so comparing them as text orders them by time. */
+export function laterDate(left: LocalDate, right: LocalDate): LocalDate {
+  return left > right ? left : right;
+}
+
 /** All dates from `from` to `to`, both inclusive. */
 export function eachDate(from: LocalDate, to: LocalDate): LocalDate[] {
   const dates: LocalDate[] = [];

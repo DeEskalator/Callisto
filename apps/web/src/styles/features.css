@@ -1,0 +1,352 @@
+/* Styles that belong to individual views rather than to the window or the controls. */
+
+/* ── List views ───────────────────────────────────────────────────────────── */
+
+.collection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.collection .grid {
+  flex: 1;
+  height: auto;
+}
+
+/* ── Cards (overview, hints) ──────────────────────────────────────────────── */
+
+.card {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background: var(--surface);
+  user-select: text;
+}
+.card__title {
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.card__empty {
+  color: var(--text-faint);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1100px;
+}
+.overview__wide {
+  grid-column: 1 / -1;
+}
+.overview__headline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: 600;
+}
+@container (max-width: 700px) {
+  .overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Pages that are edited as a whole (opening hours, practice) ───────────── */
+
+.form--page {
+  max-width: 760px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.hours {
+  max-width: 760px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+}
+.hours__day {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.hours__day:last-child {
+  border-bottom: 0;
+}
+.hours__name {
+  font-weight: 500;
+}
+.hours__ranges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.hours__range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hours__closed {
+  color: var(--text-faint);
+}
+.hours__error {
+  grid-column: 2;
+  color: var(--danger);
+  font-size: var(--font-size-small);
+}
+.hours__holidays {
+  max-width: 760px;
+  color: var(--text-muted);
+}
+
+/* ── Announcements: which preset applies when ─────────────────────────────── */
+
+.assignments {
+  flex: none;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+/* A legend is laid out by its own rules; floating it turns it into an ordinary block. */
+.assignments__title {
+  float: left;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 600;
+}
+.assignments__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  clear: both;
+  max-width: 900px;
+}
+.assignments__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+}
+@container (max-width: 760px) {
+  .assignments__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Roles ────────────────────────────────────────────────────────────────── */
+
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.checklist li {
+  position: relative;
+  padding: 3px 0 3px 22px;
+  color: var(--text-faint);
+}
+.checklist li::before {
+  content: "–";
+  position: absolute;
+  left: 4px;
+}
+.checklist li[data-granted="true"] {
+  color: var(--text);
+  text-decoration: none;
+}
+.checklist li[data-granted="true"]::before {
+  content: "✓";
+  color: var(--success);
+  font-weight: 700;
+}
+
+.permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+}
+.permission-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+.permission-list__item:hover {
+  background: var(--hover);
+}
+.permission-list__item input {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+.permission-list__item strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ── Toolbar extras ───────────────────────────────────────────────────────── */
+
+.toolbar__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.toolbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar__period {
+  margin-right: 8px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Calendar: one week of slots ──────────────────────────────────────────── */
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(118px, 1fr));
+  height: 100%;
+  min-width: max-content;
+}
+.week__day {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+.week__day:last-child {
+  border-right: 0;
+}
+.week__header {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: var(--row-height);
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.week__day[data-today="true"] .week__date {
+  color: var(--accent);
+  font-weight: 700;
+}
+.week__header .pill {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.week__slots {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+.week__day[data-past="true"] .week__slots {
+  opacity: 0.55;
+}
+.week__empty {
+  padding: 6px 4px;
+  color: var(--text-faint);
+}
+
+.slot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 24px;
+  padding: 0 6px 0 8px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--slot-color);
+  border-radius: 3px;
+  background: var(--surface);
+  text-align: left;
+  cursor: default;
+}
+.slot:hover {
+  background: var(--hover);
+}
+.slot[aria-pressed="true"] {
+  border-color: var(--accent);
+  border-left-color: var(--slot-color);
+  background: var(--accent-soft);
+}
+.slot__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.slot__name {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot__status,
+.slot__count {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+}
+.slot__count {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.slot[data-status="booked"] {
+  background: color-mix(in srgb, var(--slot-color) 14%, var(--surface));
+}
+.slot[data-status="booked"] .slot__name {
+  color: var(--text);
+}
+.slot[data-status="blocked"] {
+  border-style: dashed;
+  border-left-style: solid;
+  border-left-color: var(--border-strong);
+  background: var(--surface-alt);
+  color: var(--text-faint);
+}
+.slot[data-status="blocked"] .slot__name {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+.slot[data-conflict="true"] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.slot[data-conflict="true"] .slot__status {
+  color: var(--danger);
+}

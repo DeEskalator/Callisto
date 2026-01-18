@@ -48,12 +48,15 @@ export function problemResponse(c: Context, problem: Problem) {
 }
 
 function validationProblem(c: Context, error: z.core.$ZodError) {
-  return problemResponse(c, {
+  const problem: Problem = {
     title: 'Die Eingabe ist ungültig',
     status: 400,
     code: 'validation_failed',
     issues: error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
-  });
+  };
+  // The status is spelled out because this response becomes part of the route's type: the typed
+  // client can only tell it apart from the success response by its literal status.
+  return c.json(problem, 400, { 'Content-Type': 'application/problem+json' });
 }
 
 export const validateJson = <Schema extends z.ZodType>(schema: Schema) =>
