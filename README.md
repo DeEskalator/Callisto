@@ -15,26 +15,34 @@ Architektur und Entscheidungen: [docs/architektur.md](docs/architektur.md).
 | `packages/data`        | DynamoDB-Schlüsselschema und Repositories                                 |
 | `services/api`         | REST-API der Weboberfläche (Lambda hinter API Gateway)                    |
 | `services/voice-agent` | Sprachagent für Telefon und Testmodus (ECS Fargate), folgt                |
-| `apps/web`             | Weboberfläche (React), folgt                                              |
+| `apps/web`             | Weboberfläche (React): Terminplanung, Assistent, Verwaltung               |
 | `infra`                | AWS-Infrastruktur als CDK-App                                             |
 
-## Voraussetzungen
+## Lokal entwickeln
 
-- Node.js 24 oder neuer
-- AWS CLI mit Zugangsdaten für das Zielkonto
-- einmalig je Konto und Region: `npx cdk bootstrap`
-
-## Befehle
+Ohne AWS-Konto: Die API läuft mit denselben Routen wie auf Lambda, aber auf Daten im
+Arbeitsspeicher mit einer Beispielpraxis. Eine Anmeldung gibt es lokal nicht; oben rechts lässt
+sich zwischen zwei Beispielbenutzern (Administration, Praxisteam) wechseln.
 
 ```sh
 npm install          # Abhängigkeiten aller Workspaces
+npm run dev:api      # API auf http://localhost:8787
+npm run dev:web      # Weboberfläche auf http://localhost:5173
 npm run check        # Lint, Typprüfung und Tests
+```
+
+## Ausrollen auf AWS
+
+Voraussetzungen: Node.js 24 oder neuer, AWS CLI mit Zugangsdaten für das Zielkonto und einmalig
+je Konto und Region `npx cdk bootstrap`.
+
+```sh
 npm run synth        # CloudFormation-Vorlagen erzeugen
 npm run diff         # Unterschied zum ausgerollten Stand
 npm run deploy       # alle Stacks ausrollen
 ```
 
-## Konfiguration einer Umgebung
+### Konfiguration einer Umgebung
 
 `infra/config.example.json` nach `infra/config.json` kopieren und anpassen: Name der Umgebung,
 Praxisname, Bundesland, E-Mail-Adresse des ersten Administrationskontos und optional die eigene
