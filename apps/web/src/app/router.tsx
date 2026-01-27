@@ -24,6 +24,25 @@ const rootRoute = createRootRoute({
   ),
 });
 
+/** Shown in place of a view that failed to render, so the rest of the window stays usable. */
+function ViewError(props: { error: unknown; reset: () => void }) {
+  return (
+    <ViewFrame title="Fehler" padded>
+      <div className="notice notice--danger" role="alert">
+        <div>
+          <strong>Diese Ansicht konnte nicht angezeigt werden.</strong>{' '}
+          {props.error instanceof Error ? props.error.message : ''}
+        </div>
+      </div>
+      <p className="view__intro" style={{ marginTop: 12 }}>
+        <button type="button" className="btn" onClick={props.reset}>
+          Erneut versuchen
+        </button>
+      </p>
+    </ViewFrame>
+  );
+}
+
 // One entry per address; `AppPath` makes sure none is missing or misspelled.
 const VIEWS: Record<AppPath, () => ReactNode> = {
   '/': OverviewView,
@@ -40,7 +59,12 @@ const VIEWS: Record<AppPath, () => ReactNode> = {
 };
 
 const route = <Path extends AppPath>(path: Path) =>
-  createRoute({ getParentRoute: () => rootRoute, path, component: VIEWS[path] });
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path,
+    component: VIEWS[path],
+    errorComponent: ViewError,
+  });
 
 const routeTree = rootRoute.addChildren([
   route('/'),
