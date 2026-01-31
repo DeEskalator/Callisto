@@ -23,6 +23,8 @@ export const CallSchema = z.object({
   practiceId: IdSchema,
   channel: CallChannelSchema,
   status: CallStatusSchema,
+  /** Calendar day of the start in the practice's time zone; calls are listed by it. */
+  date: LocalDateSchema,
   startedAt: TimestampSchema,
   endedAt: TimestampSchema.optional(),
   /** Caller id as delivered by the phone network; missing if suppressed. */
@@ -115,6 +117,8 @@ export const InquirySchema = z.object({
   id: IdSchema,
   practiceId: IdSchema,
   status: InquiryStatusSchema,
+  /** Calendar day of creation in the practice's time zone. */
+  date: LocalDateSchema,
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
   /** The call the inquiry came from; inquiries entered by staff have none. */

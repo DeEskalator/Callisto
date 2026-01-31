@@ -66,3 +66,28 @@ export const freeSlotIndexKey = (
 });
 export const freeSlotsPk = (practiceId: string, categoryId: string) =>
   `PRACTICE#${practiceId}#FREE#${categoryId}`;
+
+/**
+ * Key schema of the calls table (everything a caller said: calls, transcripts, inquiries).
+ *
+ * | Item     | PK         | SK          | GSI1PK / GSI1SK                              | GSI2PK / GSI2SK                              |
+ * | -------- | ---------- | ----------- | -------------------------------------------- | -------------------------------------------- |
+ * | Call     | CALL#<id>  | META        | PRACTICE#<p>#CALLS#<date> / <startedAt>#<id> |                                              |
+ * | Turn     | CALL#<id>  | TURN#<seq>  |                                              |                                              |
+ * | Inquiry  | INQ#<id>   | META        | PRACTICE#<p>#INQ#<date> / <createdAt>#<id>   | PRACTICE#<p>#INQ#OPEN / <createdAt>#<id> (only while open) |
+ *
+ * A call and its transcript share a partition, so one query loads a whole conversation. The
+ * sparse GSI2 entry makes "everything the practice still has to do" one query, however old.
+ */
+export const GSI2 = 'GSI2';
+
+export const callPk = (callId: string) => `CALL#${callId}`;
+export const CALL_META_SK = 'META';
+export const turnSk = (seq: number) => `TURN#${String(seq).padStart(5, '0')}`;
+export const callsOfDayPk = (practiceId: string, date: string) =>
+  `PRACTICE#${practiceId}#CALLS#${date}`;
+
+export const inquiryKey = (inquiryId: string) => ({ PK: `INQ#${inquiryId}`, SK: 'META' });
+export const inquiriesOfDayPk = (practiceId: string, date: string) =>
+  `PRACTICE#${practiceId}#INQ#${date}`;
+export const openInquiriesPk = (practiceId: string) => `PRACTICE#${practiceId}#INQ#OPEN`;

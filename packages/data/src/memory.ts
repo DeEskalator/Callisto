@@ -1,32 +1,27 @@
-import type {
-  AuditStore,
-  CollectionItem,
-  ConfigCollection,
-  ConfigStore,
-  PracticeConfig,
-  SlotStore,
-  UserStore,
-} from '@callisto/data';
 import {
   type AnnouncementPreset,
   type AuditEntry,
   BUILTIN_ROLES,
+  type Call,
   DEFAULT_OPENING_HOURS,
   DEFAULT_PRESETS,
   defaultPracticeSettings,
   type FederalState,
+  type Inquiry,
   type OpeningHours,
   type PracticeSettings,
   type Slot,
   type SlotStatus,
+  type TranscriptTurn,
   type UserProfile,
 } from '@callisto/domain';
-import type { UserDirectory } from '../users/directory';
-import { UserExistsError } from '../users/directory';
+import type { CollectionItem, PracticeConfig } from './config-repository';
+import type { AuditStore, CallStore, ConfigStore, SlotStore, UserStore } from './index';
+import type { ConfigCollection } from './keys';
 
 /**
- * In-memory implementations of the stores and of the user directory. They back the tests and the
- * local development server, so the API can run without any AWS resource.
+ * In-memory implementations of the stores. They back the tests and the local development
+ * server, so the API and the voice agent can run without any AWS resource.
  */
 
 export class MemoryConfigStore implements ConfigStore {
@@ -240,50 +235,55 @@ export class MemoryAuditStore implements AuditStore {
   }
 }
 
-export class MemoryUserDirectory implements UserDirectory {
-  readonly accounts = new Map<string, { id: string; enabled: boolean }>();
-  readonly invitations: string[] = [];
-  private nextId = 1;
+export class MemoryCallStore implements CallStore {
+  readonly calls = new Map<string, Call>();
+  readonly turns = new Map<string, TranscriptTurn[]>();
+  readonly inquiries = new Map<string, Inquiry>();
 
-  async createUser(email: string) {
-    if (this.accounts.has(email)) {
-      throw new UserExistsError(email);
-    }
-    const id = `account-${this.nextId++}`;
-    this.accounts.set(email, { id, enabled: true });
-    this.invitations.push(email);
-    return id;
+  async putCall(call: Call) {
+    this.calls.set(call.id, call);
   }
 
-  async findUserId(email: string) {
-    return this.accounts.get(email)?.id;
+  async getCall(callId: string) {
+    return this.calls.get(callId);
   }
 
-  async resendInvitation(email: string) {
-    this.invitations.push(email);
+  async listCallsByDate(practiceId: string, date: string) {
+    return [...this.calls.values()]
+      .filter((call) => call.practiceId === practiceId && call.date === date)
+      .sort((left, right) => left.startedAt.localeCompare(right.startedAt));
   }
 
-  async setEnabled(userId: string, enabled: boolean) {
-    for (const account of this.accounts.values()) {
-      if (account.id === userId) {
-        account.enabled = enabled;
-      }
-    }
+  async appendTurn(callId: string, turn: TranscriptTurn) {
+    const turns = this.turns.get(callId) ?? [];
+    this.turns.set(callId, [...turns.filter((each) => each.seq !== turn.seq), turn]);
   }
 
-  async deleteUser(userId: string) {
-    for (const [email, account] of this.accounts) {
-      if (account.id === userId) {
-        this.accounts.delete(email);
-      }
-    }
+  async listTurns(callId: string) {
+    return [...(this.turns.get(callId) ?? [])].sort((left, right) => left.seq - right.seq);
   }
-}
 
-/** The bindings the Lambda adapter passes to the app, as API Gateway's authorizer would fill them. */
-export function signedInAs(userId: string | undefined) {
-  return {
-    event: { requestContext: { authorizer: userId ? { claims: { sub: userId } } : undefined } },
-    lambdaContext: {},
-  };
+  async putInquiry(inquiry: Inquiry) {
+    this.inquiries.set(inquiry.id, inquiry);
+  }
+
+  async getInquiry(inquiryId: string) {
+    return this.inquiries.get(inquiryId);
+  }
+
+  async listInquiriesByDate(practiceId: string, date: string) {
+    return this.ofPractice(practiceId).filter((inquiry) => inquiry.date === date);
+  }
+
+  async listOpenInquiries(practiceId: string) {
+    return this.ofPractice(practiceId).filter(
+      (inquiry) => inquiry.status === 'new' || inquiry.status === 'in_progress',
+    );
+  }
+
+  private ofPractice(practiceId: string): Inquiry[] {
+    return [...this.inquiries.values()]
+      .filter((inquiry) => inquiry.practiceId === practiceId)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
 }

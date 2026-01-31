@@ -5,7 +5,8 @@
   "description": "DynamoDB-Zugriff: Schlüsselschema und Repositories",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./memory": "./src/memory.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
