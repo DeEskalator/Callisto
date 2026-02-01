@@ -1,147 +1,65 @@
 /**
- * Local development server: the same Hono apps that run on Lambda, on in-memory stores.
+ * Local development server: the same Hono apps that run on Lambda and the voice agent, in one
+ * process on in-memory stores with invented data.
  *
  * It needs no AWS account. There is no sign-in; the caller is whoever the `X-Dev-User` header
- * names (default: the demo administrator). This file is never part of a Lambda bundle.
+ * names (default: the demo administrator). The assistant is played by a scripted stand-in
+ * unless `CALLISTO_MODEL=nova` is set, in which case Nova Sonic on Bedrock is used with the
+ * AWS credentials of the shell. This file is never part of a Lambda bundle.
  */
 import { createServer, type IncomingMessage } from 'node:http';
 import { Logger } from '@aws-lambda-powertools/logger';
-import { type AppointmentCategory, addDays, type SlotTemplate, toZoned } from '@callisto/domain';
-import { createAdminApp } from '../admin/app';
-import { API_ROUTES } from '../routes';
-import { reconcileSlots } from '../scheduling/reconcile';
-import { createUsersApp } from '../users/app';
 import {
   MemoryAuditStore,
+  MemoryCallStore,
   MemoryConfigStore,
   MemorySlotStore,
-  MemoryUserDirectory,
   MemoryUserStore,
-  signedInAs,
-} from './memory-stores';
+} from '@callisto/data/memory';
+import {
+  attachVoiceServer,
+  KeywordEmergencyMonitor,
+  NovaSonicModel,
+  PollySpeechSynthesizer,
+  ScriptedModel,
+  VOICE_PATH,
+} from '@callisto/voice-agent';
+import { createAdminApp } from '../admin/app';
+import { createCallsApp } from '../calls/app';
+import { API_ROUTES, type ApiFunctionName } from '../routes';
+import { createUsersApp } from '../users/app';
+import { DEMO_ADMIN_ID, DEMO_PRACTICE_ID, seedDemoData } from './demo-data';
+import { MemoryUserDirectory, signedInAs } from './memory-directory';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
-const PRACTICE_ID = 'main';
-const DEFAULT_USER = 'dev-admin';
+const TICKET_SECRET = 'local-development-only';
+const useNova = process.env.CALLISTO_MODEL === 'nova';
 
 const logger = new Logger({ serviceName: 'dev-server' });
-const config = MemoryConfigStore.withPractice(PRACTICE_ID, 'Hausarztpraxis am Markt', 'NW');
+const config = MemoryConfigStore.withPractice(DEMO_PRACTICE_ID, 'Hausarztpraxis am Markt', 'NW');
 const users = new MemoryUserStore();
 const slots = new MemorySlotStore();
+const calls = new MemoryCallStore();
 const audit = new MemoryAuditStore();
-const directory = new MemoryUserDirectory();
-
-async function seed(): Promise<void> {
-  const today = toZoned(new Date(), 'Europe/Berlin').date;
-  const createdAt = new Date().toISOString();
-  await users.put({
-    id: DEFAULT_USER,
-    practiceId: PRACTICE_ID,
-    email: 'leitung@praxis.example',
-    name: 'Praxisleitung (Demo)',
-    roleId: 'admin',
-    status: 'active',
-    createdAt,
-  });
-  await users.put({
-    id: 'dev-staff',
-    practiceId: PRACTICE_ID,
-    email: 'empfang@praxis.example',
-    name: 'Empfang (Demo)',
-    roleId: 'staff',
-    status: 'active',
-    createdAt,
-  });
-
-  const categories: AppointmentCategory[] = [
-    {
-      id: 'acute',
-      name: 'Akutsprechstunde',
-      description: 'Akute Beschwerden, die am selben oder nächsten Tag angesehen werden sollen.',
-      durationMinutes: 10,
-      color: '#c2410c',
-      active: true,
-    },
-    {
-      id: 'checkup',
-      name: 'Vorsorge',
-      description: 'Check-up, Hautkrebsscreening und andere Vorsorgeuntersuchungen.',
-      durationMinutes: 30,
-      patientHint: 'Bitte bringen Sie Ihren Impfpass mit.',
-      color: '#1d4ed8',
-      active: true,
-    },
-    {
-      id: 'blood',
-      name: 'Blutabnahme',
-      description: 'Blutabnahme und Laborkontrollen.',
-      durationMinutes: 10,
-      patientHint: 'Bitte kommen Sie nüchtern.',
-      color: '#7e22ce',
-      active: true,
-    },
-  ];
-  const everyWeekday = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
-  const templates: SlotTemplate[] = [
-    {
-      id: 'acute-morning',
-      name: 'Akut vormittags',
-      categoryId: 'acute',
-      weekdays: [...everyWeekday],
-      from: '08:00',
-      to: '09:00',
-      capacity: 1,
-      validFrom: today,
-      active: true,
-    },
-    {
-      id: 'blood-early',
-      name: 'Labor früh',
-      categoryId: 'blood',
-      weekdays: ['mon', 'wed', 'fri'],
-      from: '07:30',
-      to: '08:30',
-      capacity: 2,
-      validFrom: today,
-      active: true,
-    },
-    {
-      id: 'checkup-afternoon',
-      name: 'Vorsorge nachmittags',
-      categoryId: 'checkup',
-      weekdays: ['tue', 'thu'],
-      from: '15:00',
-      to: '17:00',
-      capacity: 1,
-      validFrom: today,
-      active: true,
-    },
-  ];
-  for (const category of categories) {
-    await config.putItem(PRACTICE_ID, 'categories', category);
-  }
-  for (const template of templates) {
-    await config.putItem(PRACTICE_ID, 'templates', template);
-  }
-  await config.putItem(PRACTICE_ID, 'closures', {
-    id: 'bridge-day',
-    title: 'Brückentag',
-    from: addDays(today, 20),
-    to: addDays(today, 20),
-    allDay: true,
-  });
-
-  const practice = await config.load(PRACTICE_ID);
-  if (practice) {
-    await reconcileSlots(practice, slots);
-  }
-}
 
 const shared = { config, users, audit, allowedOrigins: [WEB_ORIGIN], logger };
-const apps = {
-  admin: createAdminApp({ ...shared, slots }),
-  users: createUsersApp({ ...shared, directory }),
+const adminApp = createAdminApp({
+  ...shared,
+  slots,
+  voice: { url: `ws://localhost:${PORT}${VOICE_PATH}`, ticketSecret: TICKET_SECRET },
+});
+const callsApp = createCallsApp({ ...shared, slots, calls });
+const usersApp = createUsersApp({ ...shared, directory: new MemoryUserDirectory() });
+
+type Identity = ReturnType<typeof signedInAs>;
+const apps: Record<
+  ApiFunctionName,
+  (request: Request, identity: Identity) => Response | Promise<Response>
+> = {
+  admin: (request, identity) => adminApp.fetch(request, identity),
+  calls: (request, identity) => callsApp.fetch(request, identity),
+  users: (request, identity) => usersApp.fetch(request, identity),
 };
 
 async function toRequest(incoming: IncomingMessage, url: URL): Promise<Request> {
@@ -184,11 +102,11 @@ const server = createServer(async (incoming, outgoing) => {
     }
 
     const segment = url.pathname.split('/')[2] ?? '';
-    const functionName = (API_ROUTES as Record<string, keyof typeof apps>)[segment] ?? 'admin';
+    const routes: Record<string, ApiFunctionName> = API_ROUTES;
     const header = incoming.headers['x-dev-user'];
-    const userId = typeof header === 'string' && header ? header : DEFAULT_USER;
+    const userId = typeof header === 'string' && header ? header : DEMO_ADMIN_ID;
 
-    const response = await apps[functionName].fetch(
+    const response = await apps[routes[segment] ?? 'admin'](
       await toRequest(incoming, url),
       signedInAs(userId),
     );
@@ -200,7 +118,20 @@ const server = createServer(async (incoming, outgoing) => {
   }
 });
 
-await seed();
+attachVoiceServer(server, {
+  config,
+  calls,
+  slots,
+  model: useNova ? new NovaSonicModel() : new ScriptedModel(),
+  emergency: new KeywordEmergencyMonitor(),
+  ...(useNova ? { speech: new PollySpeechSynthesizer() } : {}),
+  ticketSecret: TICKET_SECRET,
+  log: (message, details) => logger.info(message, details ?? {}),
+  onError: (message, error) => logger.error(message, { error }),
+});
+
+await seedDemoData({ config, users, slots, calls });
 server.listen(PORT, () => {
   logger.info(`Callisto API (development, in-memory) on http://localhost:${PORT}/v1`);
+  logger.info(`Assistant: ${useNova ? 'Nova Sonic on Bedrock' : 'scripted stand-in'}`);
 });

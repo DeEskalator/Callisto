@@ -20,6 +20,11 @@ const app = createAdminApp({
   audit: new AuditRepository(doc, planningTable),
   allowedOrigins: requireEnv('ALLOWED_ORIGINS').split(','),
   logger: new Logger(),
+  // Set once the voice agent is deployed; until then the test mode reports itself unavailable.
+  voice:
+    process.env.VOICE_URL && process.env.TICKET_SECRET
+      ? { url: process.env.VOICE_URL, ticketSecret: process.env.TICKET_SECRET }
+      : undefined,
 });
 
 export const handler = handle(app);

@@ -158,6 +158,16 @@ export class ApiStack extends Stack {
       target: new schedulerTargets.LambdaInvoke(nightlySlots, { retryAttempts: 2 }),
     });
 
+    // The only function that can read what patients said: it alone gets the calls table and,
+    // through it, the key that encrypts it.
+    const callsApi = new ServiceFunction(this, 'CallsApi', {
+      entry: 'services/api/src/calls/handler.ts',
+      description: 'Calls, transcripts and inquiries',
+      environment: { ...environment, CALLS_TABLE: data.callsTable.tableName },
+    });
+    data.callsTable.grantReadWriteData(callsApi);
+    data.planningTable.grantReadWriteData(callsApi);
+
     const usersApi = new ServiceFunction(this, 'UsersApi', {
       entry: 'services/api/src/users/handler.ts',
       description: 'Own profile, user accounts and roles',
@@ -178,6 +188,7 @@ export class ApiStack extends Stack {
 
     const functions: Record<ApiFunctionName, lambda.IFunction> = {
       admin: adminApi,
+      calls: callsApi,
       users: usersApi,
     };
     const v1 = this.api.root.addResource('v1');

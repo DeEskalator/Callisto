@@ -1,5 +1,12 @@
 import type { Logger } from '@aws-lambda-powertools/logger';
-import type { AuditStore, ConfigStore, PracticeConfig, SlotStore, UserStore } from '@callisto/data';
+import {
+  type AuditStore,
+  type ConfigStore,
+  issueTestTicket,
+  type PracticeConfig,
+  type SlotStore,
+  type UserStore,
+} from '@callisto/data';
 import {
   type AnnouncementPreset,
   AnnouncementPresetInputSchema,
@@ -48,7 +55,12 @@ export interface AdminDeps {
   audit: AuditStore;
   allowedOrigins: string[];
   logger: Logger;
+  /** Where test conversations are held; missing if the voice agent is not deployed. */
+  voice?: { url: string; ticketSecret: string } | undefined;
 }
+
+/** How long a ticket for a test conversation can be redeemed. */
+const TICKET_LIFETIME_MS = 60_000;
 
 /** Longest period the calendar can request at once. */
 const MAX_SLOT_RANGE_DAYS = 62;
@@ -466,6 +478,26 @@ export function createAdminApp(deps: AdminDeps) {
         slot.id,
       );
       return c.body(null, 204);
+    })
+
+    // ── Testmodus ────────────────────────────────────────────────────────────
+
+    // A browser cannot authenticate a WebSocket with a header. The user proves who they are
+    // here and gets a short-lived ticket to open the conversation with.
+    .post('/test-sessions', requirePermission('testmode.use'), (c) => {
+      if (!deps.voice) {
+        throw new ApiError(503, 'testmode_unavailable', 'Der Testmodus ist nicht eingerichtet');
+      }
+      const { profile } = c.get('user');
+      const ticket = issueTestTicket(
+        {
+          practiceId: profile.practiceId,
+          userId: profile.id,
+          expiresAt: Date.now() + TICKET_LIFETIME_MS,
+        },
+        deps.voice.ticketSecret,
+      );
+      return c.json({ url: deps.voice.url, ticket }, 201);
     })
 
     // ── Audit-Log ────────────────────────────────────────────────────────────

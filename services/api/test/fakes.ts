@@ -1,13 +1,9 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import { MemoryConfigStore, MemoryUserStore } from '@callisto/data/memory';
 import type { UserProfile } from '@callisto/domain';
-import { MemoryConfigStore, MemoryUserStore } from '../src/dev/memory-stores';
 
-export {
-  MemoryAuditStore,
-  MemorySlotStore,
-  MemoryUserDirectory,
-  signedInAs,
-} from '../src/dev/memory-stores';
+export { MemoryAuditStore, MemoryCallStore, MemorySlotStore } from '@callisto/data/memory';
+export { MemoryUserDirectory, signedInAs } from '../src/dev/memory-directory';
 
 export const PRACTICE_ID = 'main';
 
