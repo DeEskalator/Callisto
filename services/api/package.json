@@ -24,6 +24,7 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.159"
+    "@types/aws-lambda": "^8.10.159",
+    "@callisto/voice-agent": "*"
   }
 }

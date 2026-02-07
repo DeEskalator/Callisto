@@ -1,0 +1,27 @@
+{
+  "name": "@callisto/voice-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sprachagent: führt Gespräche mit Nova Sonic, für Telefon und Testmodus",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.30.2",
+    "@aws-sdk/client-bedrock-runtime": "^3.985.0",
+    "@aws-sdk/client-polly": "^3.985.0",
+    "@callisto/data": "*",
+    "@callisto/domain": "*",
+    "@smithy/node-http-handler": "^4.4.9",
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}
