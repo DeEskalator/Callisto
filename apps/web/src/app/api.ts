@@ -1,4 +1,4 @@
-import type { AdminApp, Problem, UsersApp } from '@callisto/api';
+import type { AdminApp, CallsApp, Problem, UsersApp } from '@callisto/api';
 import { hc } from 'hono/client';
 import { createContext, useContext } from 'react';
 import type { Session } from './session';
@@ -83,6 +83,7 @@ export function createApiClient(baseUrl: string, session: Session) {
   };
   return {
     admin: hc<AdminApp>(baseUrl, { fetch: authorizedFetch }).v1,
+    calls: hc<CallsApp>(baseUrl, { fetch: authorizedFetch }).v1,
     users: hc<UsersApp>(baseUrl, { fetch: authorizedFetch }).v1,
   };
 }

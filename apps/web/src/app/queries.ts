@@ -13,6 +13,12 @@ export const queryKeys = {
   users: ['users'] as const,
   roles: ['roles'] as const,
   audit: (month: string) => ['audit', month] as const,
+  openInquiries: ['inquiries', 'open'] as const,
+  inquiriesOfDay: (date: string) => ['inquiries', 'day', date] as const,
+  allInquiries: ['inquiries'] as const,
+  callsOfDay: (date: string) => ['calls', 'day', date] as const,
+  call: (id: string) => ['calls', 'one', id] as const,
+  allCalls: ['calls'] as const,
 };
 
 export function useMe() {
@@ -69,4 +75,49 @@ export function useInvalidatePlanning() {
       queryClient.invalidateQueries({ queryKey: queryKeys.status }),
       queryClient.invalidateQueries({ queryKey: queryKeys.allSlots }),
     ]);
+}
+
+// The daily view shows what is happening on the phone right now. It asks again every few
+// seconds; that is frequent enough for a practice and needs no connection of its own.
+const LIVE_INTERVAL_MS = 4000;
+
+/** Everything the practice still has to act on, oldest first. */
+export function useOpenInquiries() {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.openInquiries,
+    queryFn: () => data(api.calls.inquiries.$get({ query: { open: 'true' } })),
+    refetchInterval: LIVE_INTERVAL_MS,
+  });
+}
+
+/** The inquiries created on a day. */
+export function useInquiriesOfDay(date: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.inquiriesOfDay(date),
+    queryFn: () => data(api.calls.inquiries.$get({ query: { date } })),
+    refetchInterval: LIVE_INTERVAL_MS,
+  });
+}
+
+/** The calls that started on a day. */
+export function useCallsOfDay(date: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.callsOfDay(date),
+    queryFn: () => data(api.calls.calls.$get({ query: { date } })),
+    refetchInterval: LIVE_INTERVAL_MS,
+  });
+}
+
+/** One call with its transcript and inquiries; refreshed quickly while the call is running. */
+export function useCall(callId: string | undefined) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.call(callId ?? ''),
+    queryFn: () => data(api.calls.calls[':id'].$get({ param: { id: callId ?? '' } })),
+    enabled: Boolean(callId),
+    refetchInterval: (query) => (query.state.data?.call.status === 'in_progress' ? 1500 : false),
+  });
 }

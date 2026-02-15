@@ -4,6 +4,8 @@ import { AuditView } from '../features/audit/AuditView';
 import { CalendarView } from '../features/calendar/CalendarView';
 import { CategoriesView } from '../features/categories/CategoriesView';
 import { ClosuresView } from '../features/closures/ClosuresView';
+import { CallsView } from '../features/dashboard/CallsView';
+import { InquiriesView } from '../features/dashboard/InquiriesView';
 import { OpeningHoursView } from '../features/hours/OpeningHoursView';
 import { OverviewView } from '../features/overview/OverviewView';
 import { PresetsView } from '../features/presets/PresetsView';
@@ -45,17 +47,19 @@ function ViewError(props: { error: unknown; reset: () => void }) {
 
 // One entry per address; `AppPath` makes sure none is missing or misspelled.
 const VIEWS: Record<AppPath, () => ReactNode> = {
-  '/': OverviewView,
-  '/kalender': CalendarView,
-  '/vorlagen': TemplatesView,
-  '/kategorien': CategoriesView,
-  '/sprechzeiten': OpeningHoursView,
-  '/schliesszeiten': ClosuresView,
-  '/ansagen': PresetsView,
-  '/praxis': PracticeSettingsView,
-  '/benutzer': UsersView,
-  '/rollen': RolesView,
-  '/protokoll': AuditView,
+  '/': InquiriesView,
+  '/anrufe': CallsView,
+  '/einstellungen': OverviewView,
+  '/einstellungen/kalender': CalendarView,
+  '/einstellungen/vorlagen': TemplatesView,
+  '/einstellungen/kategorien': CategoriesView,
+  '/einstellungen/sprechzeiten': OpeningHoursView,
+  '/einstellungen/schliesszeiten': ClosuresView,
+  '/einstellungen/ansagen': PresetsView,
+  '/einstellungen/praxis': PracticeSettingsView,
+  '/einstellungen/benutzer': UsersView,
+  '/einstellungen/rollen': RolesView,
+  '/einstellungen/protokoll': AuditView,
 };
 
 const route = <Path extends AppPath>(path: Path) =>
@@ -68,16 +72,18 @@ const route = <Path extends AppPath>(path: Path) =>
 
 const routeTree = rootRoute.addChildren([
   route('/'),
-  route('/kalender'),
-  route('/vorlagen'),
-  route('/kategorien'),
-  route('/sprechzeiten'),
-  route('/schliesszeiten'),
-  route('/ansagen'),
-  route('/praxis'),
-  route('/benutzer'),
-  route('/rollen'),
-  route('/protokoll'),
+  route('/anrufe'),
+  route('/einstellungen'),
+  route('/einstellungen/kalender'),
+  route('/einstellungen/vorlagen'),
+  route('/einstellungen/kategorien'),
+  route('/einstellungen/sprechzeiten'),
+  route('/einstellungen/schliesszeiten'),
+  route('/einstellungen/ansagen'),
+  route('/einstellungen/praxis'),
+  route('/einstellungen/benutzer'),
+  route('/einstellungen/rollen'),
+  route('/einstellungen/protokoll'),
 ]);
 
 export const router = createRouter({ routeTree });

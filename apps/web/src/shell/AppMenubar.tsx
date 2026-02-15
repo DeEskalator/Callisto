@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronDown, LogOut } from 'lucide-react';
+import { ChevronDown, LogOut, PhoneCall, Settings } from 'lucide-react';
 import { DropdownMenu, Menubar } from 'radix-ui';
 import { useMe, useStatus } from '../app/queries';
 import { useSession } from '../app/session';
@@ -38,8 +38,12 @@ function commandEntry(command: Command): MenuEntry {
 export function AppMenubar(props: {
   navigation: NavGroup[];
   navVisible: boolean;
+  settingsOpen: boolean;
+  /** Whether the user may hold test calls with the assistant. */
+  mayTest: boolean;
   onToggleNav: () => void;
-  onShowDialog: (dialog: 'shortcuts' | 'about') => void;
+  onToggleSettings: () => void;
+  onShowDialog: (dialog: 'shortcuts' | 'about' | 'testcall') => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -107,6 +111,23 @@ export function AppMenubar(props: {
     }),
   ]);
 
+  const toolsMenu: MenuEntry[] = [
+    {
+      label: 'Testanruf …',
+      icon: PhoneCall,
+      disabled: !props.mayTest,
+      onSelect: () => props.onShowDialog('testcall'),
+    },
+    { type: 'separator' },
+    {
+      label: 'Einstellungen',
+      icon: Settings,
+      checked: props.settingsOpen,
+      shortcut: shortcutLabel({ key: ',', alt: true }),
+      onSelect: props.onToggleSettings,
+    },
+  ];
+
   const helpMenu: MenuEntry[] = [
     { label: 'Tastenkürzel …', onSelect: () => props.onShowDialog('shortcuts') },
     { type: 'separator' },
@@ -139,6 +160,7 @@ export function AppMenubar(props: {
     ['Bearbeiten', editMenu],
     ['Ansicht', viewMenu],
     ['Gehe zu', goMenu],
+    ['Extras', toolsMenu],
     ['Hilfe', helpMenu],
   ];
 
@@ -162,6 +184,25 @@ export function AppMenubar(props: {
       </Menubar.Root>
       <span className="menubar__spacer" />
       {practiceName && <span className="menubar__practice">{practiceName}</span>}
+      {props.mayTest && (
+        <button
+          type="button"
+          className="menubar__action"
+          onClick={() => props.onShowDialog('testcall')}
+        >
+          <PhoneCall />
+          Testanruf
+        </button>
+      )}
+      <button
+        type="button"
+        className="menubar__action"
+        aria-pressed={props.settingsOpen}
+        onClick={props.onToggleSettings}
+      >
+        <Settings />
+        Einstellungen
+      </button>
       {me && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger className="menubar__user">

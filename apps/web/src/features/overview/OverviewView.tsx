@@ -22,7 +22,7 @@ export function OverviewView() {
 
   if (!status.data || !config.data) {
     return (
-      <ViewFrame title="Übersicht">
+      <ViewFrame title="Status">
         <QueryState query={status.data ? config : status} />
       </ViewFrame>
     );
@@ -36,7 +36,7 @@ export function OverviewView() {
 
   return (
     <ViewFrame
-      title="Übersicht"
+      title="Status"
       padded
       commands={[
         refreshCommand(() => {
@@ -124,7 +124,7 @@ export function OverviewView() {
                 in einer Schließzeit oder an einem Feiertag.
               </strong>{' '}
               Bitte nehmen Sie Kontakt mit den Patienten auf.{' '}
-              <Link to="/kalender">Zum Kalender</Link>
+              <Link to="/einstellungen/kalender">Zum Kalender</Link>
             </div>
           </div>
         )}

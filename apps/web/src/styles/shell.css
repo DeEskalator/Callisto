@@ -47,6 +47,27 @@
 .menubar__spacer {
   flex: 1;
 }
+.menubar__action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  margin-right: 4px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  cursor: default;
+}
+.menubar__action svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+.menubar__action:hover,
+.menubar__action[aria-pressed="true"] {
+  background: var(--selection-inactive);
+}
 .menubar__practice {
   margin-right: 8px;
   color: var(--text-muted);
@@ -339,4 +360,85 @@
 .splash__text {
   max-width: 46ch;
   user-select: text;
+}
+
+/* ── Settings sheet ───────────────────────────────────────────────────────── */
+
+.workspace-area {
+  position: relative;
+  min-height: 0;
+}
+.workspace-area__main {
+  height: 100%;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--overlay);
+  animation: sheet-fade 0.15s ease-out;
+}
+/* Attached to the menu bar at the top, like a sheet that slides out from under it. */
+.sheet {
+  position: absolute;
+  top: 0;
+  bottom: 28px;
+  left: 50%;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  width: min(1320px, calc(100% - 64px));
+  transform: translateX(-50%);
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-large) var(--radius-large);
+  background: var(--surface);
+  box-shadow: var(--shadow-dialog);
+  outline: none;
+  animation: sheet-down 0.18s ease-out;
+}
+.sheet__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 12px 0 18px;
+  border-bottom: 1px solid var(--chrome-border);
+  background: var(--chrome);
+}
+.sheet__title {
+  font-size: var(--font-size-title);
+  font-weight: 600;
+}
+.sheet__body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 0;
+}
+.sheet__nav {
+  min-height: 0;
+  border-right: 1px solid var(--chrome-border);
+}
+.sheet__view {
+  min-width: 0;
+  min-height: 0;
+}
+@keyframes sheet-down {
+  from {
+    transform: translate(-50%, -16px);
+    opacity: 0;
+  }
+}
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-backdrop {
+    animation: none;
+  }
 }

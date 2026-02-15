@@ -1,7 +1,16 @@
-import { type ReactNode, useEffect } from 'react';
+import { createContext, type ReactNode, useContext, useEffect } from 'react';
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels';
 import { shortcutLabel } from '../lib/platform';
 import { type Command, viewStore } from './commands';
+
+/**
+ * Where a view is shown. While the settings sheet is open, the daily view stays visible behind
+ * it but is not the active view: it must not offer its commands to the window.
+ */
+export const ViewScope = createContext<{ name: 'main' | 'sheet'; active: boolean }>({
+  name: 'main',
+  active: true,
+});
 
 /**
  * The frame every view is rendered in: a toolbar with the view's title and commands, the content
@@ -22,12 +31,19 @@ export function ViewFrame(props: {
   children: ReactNode;
 }) {
   const { title, commands = [], status } = props;
+  const scope = useContext(ViewScope);
 
   // Published on every render so that the commands the window holds are never stale.
   useEffect(() => {
-    viewStore.publish({ title, commands, status });
+    if (scope.active) {
+      viewStore.publish({ title, commands, status });
+    }
   });
-  useEffect(() => () => viewStore.publish(undefined), []);
+  useEffect(() => {
+    if (scope.active) {
+      return () => viewStore.publish(undefined);
+    }
+  }, [scope.active]);
 
   const content = (
     <div className={props.padded ? 'view__content view__content--padded' : 'view__content'}>
@@ -70,9 +86,11 @@ function WithInspector(props: {
   inspector: { title: string; content: ReactNode };
   children: ReactNode;
 }) {
-  const layout = useDefaultLayout({ id: 'callisto.view' });
+  // The daily view and the sheet can be on screen together; each remembers its own split.
+  const id = `callisto.view.${useContext(ViewScope).name}`;
+  const layout = useDefaultLayout({ id });
   return (
-    <Group id="callisto.view" orientation="horizontal" className="view__split" {...layout}>
+    <Group id={id} orientation="horizontal" className="view__split" {...layout}>
       <Panel id="content" minSize="35%">
         {props.children}
       </Panel>

@@ -73,3 +73,30 @@ export function initialsOf(name: string): string {
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
   return (first + last).toUpperCase();
 }
+
+const timeFormat = new Intl.DateTimeFormat('de-DE', {
+  timeZone: 'Europe/Berlin',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** The time of an instant on the practice's wall clock: `08:12` */
+export const formatTime = (iso: string) => timeFormat.format(new Date(iso));
+
+/** A duration in the way phone logs show it: `2:05 min` */
+export function formatDuration(fromIso: string, toIso: string | undefined): string {
+  if (!toIso) {
+    return '–';
+  }
+  const seconds = Math.max(0, Math.round((Date.parse(toIso) - Date.parse(fromIso)) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} min`;
+}
+
+/** German phone numbers in national notation with a gap after the prefix; others unchanged. */
+export function formatPhone(number: string | undefined): string {
+  if (!number) {
+    return 'Unterdrückt';
+  }
+  const national = number.startsWith('+49') ? `0${number.slice(3)}` : number;
+  return /^01\d/.test(national) ? `${national.slice(0, 4)} ${national.slice(4)}` : national;
+}

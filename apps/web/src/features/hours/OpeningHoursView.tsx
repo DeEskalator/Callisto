@@ -159,8 +159,9 @@ function OpeningHoursEditor(props: {
           {upcomingHolidays
             .map((holiday) => `${holiday.name} (${formatShortDay(holiday.date)})`)
             .join(', ')}
-          . Das Bundesland legen Sie unter <Link to="/praxis">Praxis</Link> fest, Urlaub und
-          Brückentage unter <Link to="/schliesszeiten">Urlaub &amp; Schließzeiten</Link>.
+          . Das Bundesland legen Sie unter <Link to="/einstellungen/praxis">Praxis</Link> fest,
+          Urlaub und Brückentage unter{' '}
+          <Link to="/einstellungen/schliesszeiten">Urlaub &amp; Schließzeiten</Link>.
         </p>
       </section>
     </ViewFrame>
