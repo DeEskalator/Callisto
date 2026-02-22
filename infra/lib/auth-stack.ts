@@ -1,7 +1,7 @@
 import { Aws, CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import type { Construct } from 'constructs';
-import { type DeploymentConfig, webOrigins } from './config';
+import type { DeploymentConfig } from './config';
 
 export interface AuthStackProps extends StackProps {
   config: DeploymentConfig;
@@ -19,17 +19,17 @@ const API_IDENTIFIER = 'callisto-api';
  */
 export class AuthStack extends Stack {
   readonly userPool: cognito.UserPool;
-  readonly webClient: cognito.UserPoolClient;
   /** OAuth scope an access token needs to call the app API, e.g. `callisto-api/app`. */
   readonly apiScope: string;
   /** Base URL of the managed login pages. */
   readonly loginBaseUrl: string;
+  private readonly loginDomain: cognito.UserPoolDomain;
+  private readonly resourceServer: cognito.UserPoolResourceServer;
 
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
     const { config } = props;
-    const origins = webOrigins(config);
-    const appUrl = origins[0] ?? '';
+    const appUrl = config.domain ? `https://${config.domain.appHost}` : undefined;
 
     this.userPool = new cognito.UserPool(this, 'UserPool', {
       userPoolName: `callisto-${config.stage}`,
@@ -67,24 +67,34 @@ export class AuthStack extends Stack {
       removalPolicy: config.production ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-    const domain = this.userPool.addDomain('LoginDomain', {
+    this.loginDomain = this.userPool.addDomain('LoginDomain', {
       cognitoDomain: { domainPrefix: `callisto-${config.stage}-${Aws.ACCOUNT_ID}` },
       managedLoginVersion: cognito.ManagedLoginVersion.NEWER_MANAGED_LOGIN,
     });
-    this.loginBaseUrl = domain.baseUrl();
+    this.loginBaseUrl = this.loginDomain.baseUrl();
 
     const appScope = new cognito.ResourceServerScope({
       scopeName: 'app',
       scopeDescription: 'Zugriff der Weboberfläche auf die Callisto-API',
     });
-    const resourceServer = this.userPool.addResourceServer('ApiResourceServer', {
+    this.resourceServer = this.userPool.addResourceServer('ApiResourceServer', {
       identifier: API_IDENTIFIER,
       scopes: [appScope],
     });
     // Spelled out instead of derived from the resource, so other stacks get a plain string.
     this.apiScope = `${API_IDENTIFIER}/${appScope.scopeName}`;
 
-    this.webClient = this.userPool.addClient('WebClient', {
+    new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
+    new CfnOutput(this, 'LoginBaseUrl', { value: this.loginBaseUrl });
+  }
+
+  /**
+   * Registers the web app as a client of the user pool. It is created by the stack that knows
+   * where the app is served from, because the login only redirects to addresses listed here.
+   */
+  addWebClient(scope: Construct, origins: string[]): cognito.UserPoolClient {
+    const client = new cognito.UserPoolClient(scope, 'WebClient', {
+      userPool: this.userPool,
       userPoolClientName: 'web',
       // A browser app cannot keep a secret; PKCE takes its place.
       generateSecret: false,
@@ -109,18 +119,15 @@ export class AuthStack extends Stack {
       refreshTokenValidity: Duration.hours(12),
     });
     // The client refers to the scope by name, so the dependency has to be stated.
-    this.webClient.node.addDependency(resourceServer);
+    client.node.addDependency(this.resourceServer);
 
     // The new managed login only renders once a style is assigned to the app client.
-    const branding = new cognito.CfnManagedLoginBranding(this, 'LoginBranding', {
+    const branding = new cognito.CfnManagedLoginBranding(scope, 'LoginBranding', {
       userPoolId: this.userPool.userPoolId,
-      clientId: this.webClient.userPoolClientId,
+      clientId: client.userPoolClientId,
       useCognitoProvidedValues: true,
     });
-    branding.node.addDependency(domain);
-
-    new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
-    new CfnOutput(this, 'WebClientId', { value: this.webClient.userPoolClientId });
-    new CfnOutput(this, 'LoginBaseUrl', { value: this.loginBaseUrl });
+    branding.node.addDependency(this.loginDomain);
+    return client;
   }
 }

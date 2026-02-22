@@ -1,7 +1,10 @@
 import { RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as pipes from 'aws-cdk-lib/aws-pipes';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 import type { DeploymentConfig } from './config';
 
@@ -22,6 +25,8 @@ export class DataStack extends Stack {
   readonly callsTable: dynamodb.TableV2;
   readonly patientDataKey: kms.Key;
   readonly eventBus: events.EventBus;
+  /** Shared by the API and the voice agent to sign and check tickets for test conversations. */
+  readonly ticketSecret: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -67,6 +72,56 @@ export class DataStack extends Stack {
 
     this.eventBus = new events.EventBus(this, 'EventBus', {
       eventBusName: `callisto-${config.stage}`,
+    });
+
+    this.ticketSecret = new secretsmanager.Secret(this, 'TicketSecret', {
+      description: `Callisto ${config.stage}: signs tickets for test conversations`,
+      generateSecretString: { passwordLength: 48, excludePunctuation: true },
+    });
+
+    this.publishInquiryEvents(config);
+  }
+
+  /**
+   * Turns every new or changed inquiry into an event on the bus. This is where an integration
+   * (e.g. with the practice management system) attaches: it subscribes to the events and fetches
+   * the details through the API. The events carry ids and the type, never patient data.
+   */
+  private publishInquiryEvents(config: DeploymentConfig): void {
+    const role = new iam.Role(this, 'InquiryEventsRole', {
+      assumedBy: new iam.ServicePrincipal('pipes.amazonaws.com'),
+    });
+    this.callsTable.grantStreamRead(role);
+    this.patientDataKey.grantDecrypt(role);
+    this.eventBus.grantPutEventsTo(role);
+
+    const field = (path: string) => `<$.dynamodb.NewImage.data.M.${path}>`;
+    new pipes.CfnPipe(this, 'InquiryEvents', {
+      name: `callisto-${config.stage}-inquiry-events`,
+      description: 'Callisto: inquiries from the calls table as events',
+      roleArn: role.roleArn,
+      source: this.callsTable.tableStreamArn ?? '',
+      sourceParameters: {
+        dynamoDbStreamParameters: { startingPosition: 'LATEST', batchSize: 10 },
+        filterCriteria: {
+          filters: [
+            {
+              pattern: JSON.stringify({
+                eventName: ['INSERT', 'MODIFY'],
+                dynamodb: { Keys: { PK: { S: [{ prefix: 'INQ#' }] } } },
+              }),
+            },
+          ],
+        },
+      },
+      target: this.eventBus.eventBusArn,
+      targetParameters: {
+        eventBridgeEventBusParameters: {
+          source: 'callisto.inquiries',
+          detailType: 'Inquiry changed',
+        },
+        inputTemplate: `{"change": "<$.eventName>", "inquiryId": "${field('id.S')}", "practiceId": "${field('practiceId.S')}", "type": "${field('details.M.type.S')}", "status": "${field('status.S')}", "test": ${field('test.BOOL')}}`,
+      },
     });
   }
 }

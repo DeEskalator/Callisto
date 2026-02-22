@@ -22,7 +22,7 @@ const app = createUsersApp({
     new CognitoIdentityProviderClient({}),
     requireEnv('USER_POOL_ID'),
   ),
-  allowedOrigins: requireEnv('ALLOWED_ORIGINS').split(','),
+  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean),
   logger: new Logger(),
 });
 

@@ -31,6 +31,8 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
     throw new Error(`config.json konnte nicht geladen werden (${response.status})`);
   }
   const config: RuntimeConfig = await response.json();
+  // Empty means: the API is reached through the app's own address.
+  config.apiUrl ||= window.location.origin;
   if (config.auth.mode !== 'oidc') {
     throw new Error('Die Anmeldung ist für diese Umgebung nicht konfiguriert');
   }

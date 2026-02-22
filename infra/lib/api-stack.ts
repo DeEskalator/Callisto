@@ -28,6 +28,8 @@ export interface ApiStackProps extends StackProps {
   config: DeploymentConfig;
   data: DataStack;
   auth: AuthStack;
+  /** Where test conversations are held, if the voice agent is deployed. */
+  voiceUrl?: string | undefined;
 }
 
 /**
@@ -41,16 +43,19 @@ export class ApiStack extends Stack {
   readonly api: apigw.RestApi;
   /** Base URL without a trailing slash; the routes start at `/v1`. */
   readonly apiUrl: string;
+  /** Host name of the API, for proxies such as CloudFront. */
+  readonly apiHostName: string;
+  /** Path the routes are served below on that host (the stage), empty for an own domain. */
+  readonly apiBasePath: string;
 
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
     const { config, data, auth } = props;
 
+    // The web app normally reaches the API through its own address (see the web stack) and needs
+    // no CORS. These are the origins that call it from elsewhere.
     const origins = webOrigins(config);
     const primaryOrigin = origins[0];
-    if (!primaryOrigin) {
-      throw new Error('The deployment config needs a domain or at least one entry in devOrigins');
-    }
 
     // ── API Gateway ──────────────────────────────────────────────────────────
 
@@ -91,12 +96,16 @@ export class ApiStack extends Stack {
         ),
       },
       // Preflight requests are answered here, without authorization and without a Lambda call.
-      defaultCorsPreflightOptions: {
-        allowOrigins: origins,
-        allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowHeaders: ['Authorization', 'Content-Type'],
-        maxAge: Duration.minutes(10),
-      },
+      ...(origins.length > 0
+        ? {
+            defaultCorsPreflightOptions: {
+              allowOrigins: origins,
+              allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+              allowHeaders: ['Authorization', 'Content-Type'],
+              maxAge: Duration.minutes(10),
+            },
+          }
+        : {}),
     });
 
     // Errors raised by API Gateway itself (expired token, throttling) need the CORS header too,
@@ -105,10 +114,12 @@ export class ApiStack extends Stack {
       ['Default4xx', apigw.ResponseType.DEFAULT_4XX],
       ['Default5xx', apigw.ResponseType.DEFAULT_5XX],
     ] as const) {
-      this.api.addGatewayResponse(name, {
-        type,
-        responseHeaders: { 'Access-Control-Allow-Origin': `'${primaryOrigin}'` },
-      });
+      if (primaryOrigin) {
+        this.api.addGatewayResponse(name, {
+          type,
+          responseHeaders: { 'Access-Control-Allow-Origin': `'${primaryOrigin}'` },
+        });
+      }
     }
 
     const authorizer = new apigw.CognitoUserPoolsAuthorizer(this, 'Authorizer', {
@@ -131,12 +142,20 @@ export class ApiStack extends Stack {
     const adminApi = new ServiceFunction(this, 'AdminApi', {
       entry: 'services/api/src/admin/handler.ts',
       description: 'Practice configuration and planning: settings, hours, closures, presets, slots',
-      environment,
+      environment: {
+        ...environment,
+        ...(props.voiceUrl
+          ? { VOICE_URL: props.voiceUrl, TICKET_SECRET_ARN: data.ticketSecret.secretArn }
+          : {}),
+      },
       // Changes that re-derive the slots of the whole booking horizon take a moment; this is
       // API Gateway's own limit for a request.
       timeout: Duration.seconds(29),
     });
     data.planningTable.grantReadWriteData(adminApi);
+    if (props.voiceUrl) {
+      data.ticketSecret.grantRead(adminApi);
+    }
 
     const nightlySlots = new ServiceFunction(this, 'NightlySlots', {
       entry: 'services/api/src/scheduling/nightly.ts',
@@ -254,10 +273,14 @@ export class ApiStack extends Stack {
         recordName: apiHost,
         target: route53.RecordTarget.fromAlias(new targets.ApiGatewayDomain(domainName)),
       });
+      this.apiHostName = apiHost;
+      this.apiBasePath = '';
       this.apiUrl = `https://${apiHost}`;
     } else {
       const stage = this.api.deploymentStage.stageName;
-      this.apiUrl = `https://${this.api.restApiId}.execute-api.${this.region}.${Aws.URL_SUFFIX}/${stage}`;
+      this.apiHostName = `${this.api.restApiId}.execute-api.${this.region}.${Aws.URL_SUFFIX}`;
+      this.apiBasePath = `/${stage}`;
+      this.apiUrl = `https://${this.apiHostName}${this.apiBasePath}`;
     }
 
     new CfnOutput(this, 'ApiUrl', { value: this.apiUrl });
@@ -287,7 +310,13 @@ export class ApiStack extends Stack {
           priority: 0,
           action: { block: {} },
           statement: {
-            rateBasedStatement: { limit: 600, evaluationWindowSec: 300, aggregateKeyType: 'IP' },
+            // Requests come through CloudFront, so the client's address is in X-Forwarded-For.
+            rateBasedStatement: {
+              limit: 600,
+              evaluationWindowSec: 300,
+              aggregateKeyType: 'FORWARDED_IP',
+              forwardedIpConfig: { headerName: 'X-Forwarded-For', fallbackBehavior: 'MATCH' },
+            },
           },
           visibilityConfig: visibility('rate-limit'),
         },

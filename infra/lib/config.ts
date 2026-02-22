@@ -38,12 +38,20 @@ const DeploymentConfigSchema = z.object({
       zoneName: hostName,
       appHost: hostName,
       apiHost: hostName,
+      /** Address of the voice agent, which serves the test mode. */
+      voiceHost: hostName,
     })
     .optional(),
   /** Further origins that may sign in and call the API, e.g. the local dev server. */
   devOrigins: z.array(z.url()).default([]),
   /** Puts AWS WAF in front of the API (about 9 USD per month). */
   waf: z.boolean().default(false),
+  /**
+   * Runs the voice agent, which serves the test mode and later the phone line (about 45 USD per
+   * month for container, load balancer and addresses). It needs `domain`, because the browser
+   * only opens a WebSocket over TLS, and TLS needs a name.
+   */
+  voice: z.boolean().default(false),
 });
 
 export type DeploymentConfig = z.infer<typeof DeploymentConfigSchema>;
@@ -60,10 +68,17 @@ export function loadConfig(directory: string): DeploymentConfig {
   if (!parsed.success) {
     throw new Error(`Invalid deployment config in ${file}:\n${z.prettifyError(parsed.error)}`);
   }
+  if (parsed.data.voice && !parsed.data.domain) {
+    throw new Error(`Invalid deployment config in ${file}: "voice" needs a "domain"`);
+  }
   return parsed.data;
 }
 
-/** Origins the web app is served from; they may sign in and call the API. */
+/**
+ * Origins that call the API from another address and therefore need CORS: the web app on its
+ * own domain and the local dev server. Without a domain the app reaches the API through its
+ * own address (see the web stack), which needs none.
+ */
 export function webOrigins(config: DeploymentConfig): string[] {
   const origins = [...config.devOrigins];
   if (config.domain) {

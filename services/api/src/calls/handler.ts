@@ -20,7 +20,7 @@ const app = createCallsApp({
   config: new ConfigRepository(doc, planningTable),
   users: new UserRepository(doc, planningTable),
   audit: new AuditRepository(doc, planningTable),
-  allowedOrigins: requireEnv('ALLOWED_ORIGINS').split(','),
+  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean),
   logger: new Logger(),
 });
 

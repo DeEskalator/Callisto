@@ -10,5 +10,6 @@
     "adminName": "Administration"
   },
   "devOrigins": ["http://localhost:5173"],
-  "waf": false
+  "waf": false,
+  "voice": false
 }
