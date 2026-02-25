@@ -1,6 +1,7 @@
 /** Entry point of the voice agent container. */
 import { createServer } from 'node:http';
 import { Logger } from '@aws-lambda-powertools/logger';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import {
   CallRepository,
   ConfigRepository,
@@ -21,6 +22,15 @@ function requireEnv(name: string): string {
 }
 
 const logger = new Logger({ serviceName: 'voice-agent' });
+
+// The same secret the API signs test tickets with.
+const secret = await new SecretsManagerClient({}).send(
+  new GetSecretValueCommand({ SecretId: requireEnv('TICKET_SECRET_ARN') }),
+);
+const ticketSecret = secret.SecretString;
+if (!ticketSecret) {
+  throw new Error('The ticket secret is empty');
+}
 const doc = createDocumentClient();
 const planningTable = requireEnv('PLANNING_TABLE');
 
@@ -40,7 +50,7 @@ attachVoiceServer(server, {
   }),
   speech: new PollySpeechSynthesizer(),
   emergency: new KeywordEmergencyMonitor(),
-  ticketSecret: requireEnv('TICKET_SECRET'),
+  ticketSecret,
   log: (message, details) => logger.info(message, details ?? {}),
   // Never log what was said, only that something went wrong.
   onError: (message, error) => logger.error(message, { error }),
