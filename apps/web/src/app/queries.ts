@@ -77,9 +77,10 @@ export function useInvalidatePlanning() {
     ]);
 }
 
-// The daily view shows what is happening on the phone right now. It asks again every few
-// seconds; that is frequent enough for a practice and needs no connection of its own.
-const LIVE_INTERVAL_MS = 4000;
+// The daily view shows what is happening on the phone. It asks again every ten seconds while
+// the tab is visible: frequent enough for a practice, and with a few open browsers a matter of
+// cents per month, without a push channel to run.
+const LIVE_INTERVAL_MS = 10_000;
 
 /** Everything the practice still has to act on, oldest first. */
 export function useOpenInquiries() {

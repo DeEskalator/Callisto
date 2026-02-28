@@ -1,33 +1,6 @@
 /** Audio format of a test conversation, both ways: 16 kHz, 16 bit, mono PCM. */
 const SAMPLE_RATE = 16_000;
 
-// Runs on the audio thread: collects the microphone signal into chunks of about 32 ms and
-// hands them to the page as 16 bit samples.
-const RECORDER_WORKLET = `
-class Recorder extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    this.buffer = new Int16Array(512);
-    this.filled = 0;
-  }
-  process(inputs) {
-    const channel = inputs[0][0];
-    if (channel) {
-      for (let i = 0; i < channel.length; i++) {
-        const sample = Math.max(-1, Math.min(1, channel[i]));
-        this.buffer[this.filled++] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-        if (this.filled === this.buffer.length) {
-          this.port.postMessage(this.buffer.slice().buffer);
-          this.filled = 0;
-        }
-      }
-    }
-    return true;
-  }
-}
-registerProcessor('recorder', Recorder);
-`;
-
 /**
  * Captures the microphone and delivers it in the format the assistant expects.
  * @returns a function that stops the capture and releases the microphone
@@ -38,9 +11,8 @@ export async function startMicrophone(onChunk: (pcm: ArrayBuffer) => void): Prom
   });
   // Asking for 16 kHz makes the browser resample the microphone for us.
   const context = new AudioContext({ sampleRate: SAMPLE_RATE });
-  const module = URL.createObjectURL(new Blob([RECORDER_WORKLET], { type: 'text/javascript' }));
-  await context.audioWorklet.addModule(module);
-  URL.revokeObjectURL(module);
+  // The recorder runs on the audio thread and is therefore a file of its own (public/).
+  await context.audioWorklet.addModule('/recorder-worklet.js');
 
   const source = context.createMediaStreamSource(stream);
   const recorder = new AudioWorkletNode(context, 'recorder');
