@@ -14,37 +14,34 @@ Architektur und Entscheidungen: [docs/architektur.md](docs/architektur.md).
 | `packages/domain`      | Fachlogik ohne AWS: Schemas, Sprechzeiten, Feiertage, Terminslots, Rechte |
 | `packages/data`        | DynamoDB-Schlüsselschema und Repositories                                 |
 | `services/api`         | REST-API der Weboberfläche (Lambda hinter API Gateway)                    |
-| `services/voice-agent` | Sprachagent für Telefon und Testmodus (ECS Fargate), folgt                |
-| `apps/web`             | Weboberfläche (React): Terminplanung, Assistent, Verwaltung               |
+| `services/voice-agent` | Sprachagent: Gesprächssitzung, Nova Sonic, Werkzeuge, Testmodus           |
+| `apps/web`             | Weboberfläche (React): Tagesgeschehen, Einstellungen, Testanruf           |
 | `infra`                | AWS-Infrastruktur als CDK-App                                             |
 
 ## Lokal entwickeln
 
-Ohne AWS-Konto: Die API läuft mit denselben Routen wie auf Lambda, aber auf Daten im
-Arbeitsspeicher mit einer Beispielpraxis. Eine Anmeldung gibt es lokal nicht; oben rechts lässt
-sich zwischen zwei Beispielbenutzern (Administration, Praxisteam) wechseln.
+Ohne AWS-Konto: API und Sprachagent laufen in einem Prozess auf Daten im Arbeitsspeicher, mit
+einer Beispielpraxis und erfundenen Anrufen des Tages. Eine Anmeldung gibt es lokal nicht; oben
+rechts lässt sich zwischen zwei Beispielbenutzern (Administration, Praxisteam) wechseln.
 
 ```sh
 npm install          # Abhängigkeiten aller Workspaces
-npm run dev:api      # API auf http://localhost:8787
+npm run dev:api      # API und Sprachagent auf http://localhost:8787
 npm run dev:web      # Weboberfläche auf http://localhost:5173
 npm run check        # Lint, Typprüfung und Tests
 ```
 
+Den Assistenten spielt lokal ein Skript, das getippte Stichworte versteht („Termin“, „Rezept“,
+„Sprechzeiten“ …). Mit `CALLISTO_MODEL=nova npm run dev:api` spricht der Testanruf stattdessen
+mit Nova Sonic auf Bedrock; dafür werden AWS-Zugangsdaten in der Shell und der freigeschaltete
+Modellzugriff in Stockholm gebraucht.
+
 ## Ausrollen auf AWS
 
-Voraussetzungen: Node.js 24 oder neuer, AWS CLI mit Zugangsdaten für das Zielkonto und einmalig
-je Konto und Region `npx cdk bootstrap`.
+Siehe [docs/konfiguration.md](docs/konfiguration.md).
 
 ```sh
-npm run synth        # CloudFormation-Vorlagen erzeugen
+npm run synth        # Weboberfläche bauen, CloudFormation-Vorlagen erzeugen
 npm run diff         # Unterschied zum ausgerollten Stand
 npm run deploy       # alle Stacks ausrollen
 ```
-
-### Konfiguration einer Umgebung
-
-`infra/config.example.json` nach `infra/config.json` kopieren und anpassen: Name der Umgebung,
-Praxisname, Bundesland, E-Mail-Adresse des ersten Administrationskontos und optional die eigene
-Domain. Die Datei wird nicht eingecheckt. Beim ersten Ausrollen wird die Praxis mit
-Standardwerten angelegt und das Administrationskonto per E-Mail eingeladen.
