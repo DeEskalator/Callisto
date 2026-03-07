@@ -1,3 +1,6 @@
+/** Audio is always 16 bit mono PCM; only the rate differs between channels. */
+export type SampleRate = 8000 | 16000;
+
 /** A function the model can call, described the way Bedrock expects it. */
 export interface ToolSpec {
   name: string;
@@ -19,6 +22,8 @@ export interface ModelConfig {
   spokenSoFar: string;
   /** Whether the caller speaks (audio in and out) or types (text only). */
   audio: boolean;
+  /** Sample rate of the audio in both directions: 8 kHz on the phone, 16 kHz in the browser. */
+  sampleRate: SampleRate;
 }
 
 /** What a model reports while a conversation runs. */
@@ -27,7 +32,7 @@ export interface ModelEvents {
   onCallerText(text: string): void;
   /** What the assistant said. */
   onAssistantText(text: string): void;
-  /** Speech of the assistant: 16 kHz, 16 bit, mono PCM. */
+  /** Speech of the assistant: 16 bit mono PCM at the configured sample rate. */
   onAudio(pcm: Buffer): void;
   /** The caller started talking over the assistant; audio not yet played is to be dropped. */
   onInterrupted(): void;
@@ -38,7 +43,7 @@ export interface ModelEvents {
 
 /** One running conversation with a model. */
 export interface ModelSession {
-  /** Speech of the caller: 16 kHz, 16 bit, mono PCM. */
+  /** Speech of the caller: 16 bit mono PCM at the configured sample rate. */
   sendAudio(pcm: Buffer): void;
   /** Something the caller typed instead of saying it. */
   sendText(text: string): void;

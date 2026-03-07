@@ -20,18 +20,14 @@ export const NOVA_SONIC_DEFAULTS: NovaSonicOptions = {
   voiceId: 'tina',
 };
 
-const SAMPLE_RATE = 16_000;
-/** 32 ms of silence, the frame size the model expects audio to arrive in. */
-const SILENCE = Buffer.alloc((SAMPLE_RATE * 2 * 32) / 1000);
-
-const AUDIO_FORMAT = {
+const audioFormat = (sampleRate: number) => ({
   mediaType: 'audio/lpcm',
-  sampleRateHertz: SAMPLE_RATE,
+  sampleRateHertz: sampleRate,
   sampleSizeBits: 16,
   channelCount: 1,
   audioType: 'SPEECH',
   encoding: 'base64',
-};
+});
 
 /** An async queue: the request body of the bidirectional stream is fed from it. */
 class EventQueue {
@@ -130,7 +126,10 @@ export class NovaSonicModel implements ConversationModel {
       promptStart: {
         promptName,
         textOutputConfiguration: { mediaType: 'text/plain' },
-        audioOutputConfiguration: { ...AUDIO_FORMAT, voiceId: this.options.voiceId },
+        audioOutputConfiguration: {
+          ...audioFormat(config.sampleRate),
+          voiceId: this.options.voiceId,
+        },
         toolUseOutputConfiguration: { mediaType: 'application/json' },
         toolConfiguration: {
           tools: config.tools.map((tool) => ({
@@ -157,14 +156,16 @@ export class NovaSonicModel implements ConversationModel {
         type: 'AUDIO',
         interactive: true,
         role: 'USER',
-        audioInputConfiguration: AUDIO_FORMAT,
+        audioInputConfiguration: audioFormat(config.sampleRate),
       },
     });
     const sendAudio = (pcm: Buffer) =>
       queue.push({
         audioInput: { promptName, contentName: audioName, content: pcm.toString('base64') },
       });
-    // A caller who types sends no audio; silence keeps the stream alive at the usual cadence.
+    // A caller who types sends no audio; silence keeps the stream alive at the usual cadence:
+    // 32 ms frames, the size the model expects audio to arrive in.
+    const SILENCE = Buffer.alloc((config.sampleRate * 2 * 32) / 1000);
     const silence = config.audio ? undefined : setInterval(() => sendAudio(SILENCE), 32);
 
     const response = await this.client.send(

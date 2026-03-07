@@ -16,7 +16,7 @@ import {
   toZoned,
 } from '@callisto/domain';
 import type { EmergencyMonitor } from './emergency';
-import type { ConversationModel, ModelSession, ToolUse } from './model';
+import type { ConversationModel, ModelSession, SampleRate, ToolUse } from './model';
 import {
   buildSystemPrompt,
   EMERGENCY_ANNOUNCEMENT,
@@ -33,7 +33,7 @@ export type EndReason = 'completed' | 'transferred' | 'emergency' | 'failed';
 export interface CallerLink {
   /** A line of the conversation as text, for display. */
   transcript(role: 'caller' | 'assistant', text: string): void;
-  /** Speech for the caller: 16 kHz, 16 bit, mono PCM. */
+  /** Speech for the caller: 16 bit mono PCM at the session's sample rate. */
   audio(pcm: Buffer): void;
   /** The caller interrupted; speech that has not been played yet is to be dropped. */
   clearAudio(): void;
@@ -56,7 +56,9 @@ export interface SessionDeps {
 export interface SessionParams {
   practiceId: string;
   channel: CallChannel;
-  callerNumber?: string;
+  callerNumber?: string | undefined;
+  /** 8 kHz on the phone, 16 kHz in the browser (the default). */
+  sampleRate?: SampleRate;
 }
 
 /** Used when the configuration points at a preset that no longer exists: say nothing, allow nothing. */
@@ -107,6 +109,7 @@ export class ConversationSession {
     private readonly practice: PracticeConfig,
     private call: Call,
     private readonly audio: boolean,
+    private readonly sampleRate: SampleRate,
   ) {
     this.now = deps.now ?? (() => new Date());
   }
@@ -147,6 +150,7 @@ export class ConversationSession {
       practice,
       call,
       params.channel !== 'test_text',
+      params.sampleRate ?? 16_000,
     );
     await session.saveCall();
 
@@ -155,9 +159,15 @@ export class ConversationSession {
     const announcement = openingAnnouncement(practice, preset);
     await session.say(announcement);
 
+    // Putting a caller through needs a number to put them through to.
+    const capabilities = {
+      ...preset.capabilities,
+      transfer: preset.capabilities.transfer && Boolean(practice.settings.transferNumber),
+    };
+
     const tools: ToolContext = {
       practice,
-      capabilities: preset.capabilities,
+      capabilities,
       call: { id: call.id, callerNumber: call.callerNumber, test: params.channel !== 'phone' },
       calls: deps.calls,
       slots: deps.slots,
@@ -170,10 +180,11 @@ export class ConversationSession {
     };
     session.model = await deps.model.start(
       {
-        systemPrompt: buildSystemPrompt(practice, state, preset),
-        tools: toolSpecs(preset.capabilities),
+        systemPrompt: buildSystemPrompt(practice, state, { ...preset, capabilities }),
+        tools: toolSpecs(capabilities),
         spokenSoFar: announcement,
         audio: session.audio,
+        sampleRate: session.sampleRate,
       },
       {
         onCallerText: (text) => session.callerSaid(text),
@@ -192,7 +203,7 @@ export class ConversationSession {
     return session;
   }
 
-  /** Speech of the caller: 16 kHz, 16 bit, mono PCM. */
+  /** Speech of the caller: 16 bit mono PCM at the session's sample rate. */
   receiveAudio(pcm: Buffer): void {
     if (!this.finished) {
       this.model?.sendAudio(pcm);
@@ -271,7 +282,7 @@ export class ConversationSession {
     this.record('assistant', text);
     if (this.audio && this.deps.speech) {
       try {
-        this.link.audio(await this.deps.speech.synthesize(text));
+        this.link.audio(await this.deps.speech.synthesize(text, this.sampleRate));
       } catch (error) {
         this.report('Speech synthesis failed', error);
       }

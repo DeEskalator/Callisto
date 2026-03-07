@@ -1,8 +1,9 @@
 import { PollyClient, SynthesizeSpeechCommand, type VoiceId } from '@aws-sdk/client-polly';
+import type { SampleRate } from './model';
 
-/** Turns a fixed text into speech: 16 kHz, 16 bit, mono PCM. */
+/** Turns a fixed text into speech: 16 bit mono PCM at the given sample rate. */
 export interface SpeechSynthesizer {
-  synthesize(text: string): Promise<Buffer>;
+  synthesize(text: string, sampleRate: SampleRate): Promise<Buffer>;
 }
 
 /**
@@ -18,8 +19,9 @@ export class PollySpeechSynthesizer implements SpeechSynthesizer {
     private readonly voiceId: VoiceId = 'Vicki',
   ) {}
 
-  async synthesize(text: string): Promise<Buffer> {
-    const cached = this.cache.get(text);
+  async synthesize(text: string, sampleRate: SampleRate): Promise<Buffer> {
+    const key = `${sampleRate}:${text}`;
+    const cached = this.cache.get(key);
     if (cached) {
       return cached;
     }
@@ -30,12 +32,12 @@ export class PollySpeechSynthesizer implements SpeechSynthesizer {
         LanguageCode: 'de-DE',
         Engine: 'neural',
         OutputFormat: 'pcm',
-        SampleRate: '16000',
+        SampleRate: String(sampleRate),
       }),
     );
     const audio = Buffer.from((await response.AudioStream?.transformToByteArray()) ?? []);
     // The same few announcements are spoken on every call.
-    this.cache.set(text, audio);
+    this.cache.set(key, audio);
     return audio;
   }
 }

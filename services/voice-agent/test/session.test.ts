@@ -34,6 +34,11 @@ const template: SlotTemplate = {
 
 async function setup(now: Date) {
   const config = MemoryConfigStore.withPractice(PRACTICE, 'Praxis Test', 'NW');
+  const loaded = await config.load(PRACTICE);
+  if (loaded) {
+    // The practice's second line, which is not forwarded to the assistant.
+    await config.putSettings(PRACTICE, { ...loaded.settings, transferNumber: '+4930123456' });
+  }
   await config.putItem(PRACTICE, 'categories', checkup);
   await config.putItem(PRACTICE, 'templates', template);
   const slots = new MemorySlotStore();
