@@ -145,6 +145,12 @@ export async function seedDemoData(stores: Stores): Promise<void> {
     to: addDays(today, 20),
     allDay: true,
   });
+  const initial = (await config.load(DEMO_PRACTICE_ID)) as PracticeConfig;
+  // The practice's second line, which is not forwarded to the assistant (an invented number).
+  await config.putSettings(DEMO_PRACTICE_ID, {
+    ...initial.settings,
+    transferNumber: '+4930901820',
+  });
   const practice = (await config.load(DEMO_PRACTICE_ID)) as PracticeConfig;
   await reconcileSlots(practice, slots);
 

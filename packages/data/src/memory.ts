@@ -237,6 +237,7 @@ export class MemoryAuditStore implements AuditStore {
 
 export class MemoryCallStore implements CallStore {
   readonly calls = new Map<string, Call>();
+  readonly transfers = new Set<string>();
   readonly turns = new Map<string, TranscriptTurn[]>();
   readonly inquiries = new Map<string, Inquiry>();
 
@@ -279,6 +280,14 @@ export class MemoryCallStore implements CallStore {
     return this.ofPractice(practiceId).filter(
       (inquiry) => inquiry.status === 'new' || inquiry.status === 'in_progress',
     );
+  }
+
+  async markTransfer(transactionId: string) {
+    this.transfers.add(transactionId);
+  }
+
+  async takeTransfer(transactionId: string) {
+    return this.transfers.delete(transactionId);
   }
 
   private ofPractice(practiceId: string): Inquiry[] {

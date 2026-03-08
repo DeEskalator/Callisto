@@ -1,4 +1,5 @@
 import {
+  DeleteCommand,
   type DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
@@ -15,6 +16,7 @@ import {
   inquiriesOfDayPk,
   inquiryKey,
   openInquiriesPk,
+  transferKey,
   turnSk,
 } from './keys';
 
@@ -126,6 +128,31 @@ export class CallRepository {
       KeyConditionExpression: 'GSI2PK = :pk',
       ExpressionAttributeValues: { ':pk': openInquiriesPk(practiceId) },
     });
+  }
+
+  /** Notes that the call with this telephony transaction is to be put through to the practice. */
+  async markTransfer(transactionId: string, expiresAt: number): Promise<void> {
+    await this.doc.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: { ...transferKey(transactionId), expiresAt },
+      }),
+    );
+  }
+
+  /**
+   * Whether the call is to be put through. The mark is removed in the same step, so a call is
+   * put through at most once.
+   */
+  async takeTransfer(transactionId: string): Promise<boolean> {
+    const result = await this.doc.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: transferKey(transactionId),
+        ReturnValues: 'ALL_OLD',
+      }),
+    );
+    return result.Attributes !== undefined;
   }
 
   private async query<Item>(input: Omit<QueryCommandInput, 'TableName'>): Promise<Item[]> {

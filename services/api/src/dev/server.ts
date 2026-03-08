@@ -22,6 +22,8 @@ import {
   NovaSonicModel,
   PollySpeechSynthesizer,
   ScriptedModel,
+  type SessionDeps,
+  SipServer,
   VOICE_PATH,
 } from '@callisto/voice-agent';
 import { createAdminApp } from '../admin/app';
@@ -34,6 +36,7 @@ import { MemoryUserDirectory, signedInAs } from './memory-directory';
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
 const TICKET_SECRET = 'local-development-only';
+const SIP_PORT = Number(process.env.SIP_PORT ?? 5060);
 const useNova = process.env.CALLISTO_MODEL === 'nova';
 
 const logger = new Logger({ serviceName: 'dev-server' });
@@ -118,19 +121,39 @@ const server = createServer(async (incoming, outgoing) => {
   }
 });
 
-attachVoiceServer(server, {
+const sessionDeps: SessionDeps = {
   config,
   calls,
   slots,
   model: useNova ? new NovaSonicModel() : new ScriptedModel(),
   emergency: new KeywordEmergencyMonitor(),
   ...(useNova ? { speech: new PollySpeechSynthesizer() } : {}),
-  ticketSecret: TICKET_SECRET,
-  log: (message, details) => logger.info(message, details ?? {}),
   onError: (message, error) => logger.error(message, { error }),
+};
+const log = (message: string, details?: Record<string, unknown>) =>
+  logger.info(message, details ?? {});
+attachVoiceServer(server, { ...sessionDeps, ticketSecret: TICKET_SECRET, log });
+
+// A phone line on this machine: a SIP softphone that calls sip:praxis@127.0.0.1 talks to the
+// assistant as a caller would. Putting a caller through only ends the call here, because the
+// SIP media application that would connect them runs in AWS.
+const phone = new SipServer({
+  sipPort: SIP_PORT,
+  rtpPorts: { min: 40000, max: 40099 },
+  publicAddress: process.env.SIP_PUBLIC_ADDRESS ?? '127.0.0.1',
+  practiceId: DEMO_PRACTICE_ID,
+  session: sessionDeps,
+  onTransfer: async () => log('The assistant would now put the caller through to the practice'),
+  log,
 });
 
 await seedDemoData({ config, users, slots, calls });
+try {
+  await phone.start();
+  logger.info(`Phone line (SIP over UDP) on sip:praxis@127.0.0.1:${SIP_PORT}`);
+} catch (error) {
+  logger.warn('The local phone line could not be opened; is the port in use?', { error });
+}
 server.listen(PORT, () => {
   logger.info(`Callisto API (development, in-memory) on http://localhost:${PORT}/v1`);
   logger.info(`Assistant: ${useNova ? 'Nova Sonic on Bedrock' : 'scripted stand-in'}`);

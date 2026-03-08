@@ -91,3 +91,13 @@ export const inquiryKey = (inquiryId: string) => ({ PK: `INQ#${inquiryId}`, SK: 
 export const inquiriesOfDayPk = (practiceId: string, date: string) =>
   `PRACTICE#${practiceId}#INQ#${date}`;
 export const openInquiriesPk = (practiceId: string) => `PRACTICE#${practiceId}#INQ#OPEN`;
+
+/**
+ * Marks a phone call that the assistant put through to the practice. The voice agent writes
+ * it, the SIP media application reads it when the agent hangs up, to decide whether to
+ * connect the caller to the practice or to end the call. Keyed by the telephony transaction.
+ */
+export const transferKey = (transactionId: string) => ({
+  PK: `TRANSFER#${transactionId}`,
+  SK: 'META',
+});
