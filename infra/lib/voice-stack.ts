@@ -11,6 +11,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import type { Construct } from 'constructs';
 import type { DeploymentConfig } from './config';
 import type { DataStack } from './data-stack';
+import { Telephony } from './telephony';
 
 export interface VoiceStackProps extends StackProps {
   config: DeploymentConfig;
@@ -26,7 +27,8 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 /**
  * The voice agent: a long-running container, because a conversation is a stream that lasts
  * minutes, which a Lambda function cannot hold. It runs in public subnets with its own address,
- * so it reaches Bedrock and DynamoDB without a NAT gateway; only the load balancer may talk to it.
+ * so it reaches Bedrock and DynamoDB without a NAT gateway. Only the load balancer may talk to it,
+ * and with telephony the Voice Connector's address range on the SIP and RTP ports.
  */
 export class VoiceStack extends Stack {
   /** Where the browser opens test conversations. */
@@ -53,6 +55,11 @@ export class VoiceStack extends Stack {
     const logGroup = new logs.LogGroup(this, 'Logs', {
       retention: logs.RetentionDays.THREE_MONTHS,
       removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+      hostedZoneId: domain.hostedZoneId,
+      zoneName: domain.zoneName,
     });
 
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
@@ -88,10 +95,7 @@ export class VoiceStack extends Stack {
       sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       redirectHTTP: true,
       domainName: domain.voiceHost,
-      domainZone: route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
-        hostedZoneId: domain.hostedZoneId,
-        zoneName: domain.zoneName,
-      }),
+      domainZone: zone,
       // A WebSocket that is silent for a while (the caller thinks) must not be cut.
       idleTimeout: Duration.minutes(30),
       // A new version starts before the old one stops, and a broken one is rolled back.
@@ -124,6 +128,27 @@ export class VoiceStack extends Stack {
     taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({ actions: ['polly:SynthesizeSpeech'], resources: ['*'] }),
     );
+
+    const container = service.taskDefinition.defaultContainer;
+    if (!container) {
+      throw new Error('The voice agent task has no container');
+    }
+    // On a new deployment or scale-in the container gets the most Fargate allows to let running
+    // calls finish after it was told to stop.
+    (service.taskDefinition.node.defaultChild as ecs.CfnTaskDefinition).addPropertyOverride(
+      'ContainerDefinitions.0.StopTimeout',
+      120,
+    );
+
+    if (config.telephony) {
+      new Telephony(this, 'Telephony', {
+        config,
+        data,
+        service: service.service,
+        container,
+        zone,
+      });
+    }
 
     this.voiceUrl = `wss://${domain.voiceHost}/voice`;
   }

@@ -264,3 +264,70 @@ describe('voice stack', () => {
     });
   });
 });
+
+describe('telephony', () => {
+  const telephony = { phoneNumber: '+493012345000' };
+
+  it('is not there until a phone number is configured', () => {
+    const { voice } = synth({ domain, voice: true });
+    voice?.resourceCountIs('Custom::ChimeVoiceConnector', 0);
+    voice?.resourceCountIs('Custom::ChimeSipMediaApplication', 0);
+  });
+
+  it('creates Voice Connector and SIP media application for the number', () => {
+    const { voice } = synth({ domain, voice: true, telephony });
+    voice?.hasResourceProperties('Custom::ChimeVoiceConnector', {
+      Kind: 'VoiceConnector',
+      Region: 'eu-central-1',
+      Host: 'sip.praxis.test',
+      Port: '5060',
+    });
+    voice?.hasResourceProperties('Custom::ChimeSipMediaApplication', {
+      Kind: 'SipMediaApplication',
+      PhoneNumber: '+493012345000',
+    });
+    voice?.hasResourceProperties('AWS::Lambda::Permission', {
+      Principal: 'voiceconnector.chime.amazonaws.com',
+    });
+  });
+
+  it('opens SIP and RTP only to the Voice Connector address range', () => {
+    const { voice } = synth({ domain, voice: true, telephony });
+    // Rules to address ranges are inline in the security group, rules between groups separate.
+    const ingress = [
+      ...Object.values(voice?.findResources('AWS::EC2::SecurityGroupIngress') ?? {}).map(
+        (resource) => resource.Properties,
+      ),
+      ...Object.values(voice?.findResources('AWS::EC2::SecurityGroup') ?? {}).flatMap(
+        (resource) => resource.Properties.SecurityGroupIngress ?? [],
+      ),
+    ].filter((rule) => rule.IpProtocol === 'udp');
+    expect(ingress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ CidrIp: '99.77.247.0/24', FromPort: 5060, ToPort: 5060 }),
+        expect.objectContaining({ CidrIp: '99.77.247.0/24', FromPort: 20000, ToPort: 20199 }),
+      ]),
+    );
+    expect(ingress.every((rule) => rule.CidrIp === '99.77.247.0/24')).toBe(true);
+  });
+
+  it('lets the container publish its address under the SIP host name only', () => {
+    const { voice } = synth({ domain, voice: true, telephony });
+    voice?.hasResourceProperties('AWS::Route53::RecordSet', {
+      Name: 'sip.praxis.test.',
+      Type: 'A',
+    });
+    voice?.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: [
+        Match.objectLike({
+          Environment: Match.arrayWith([
+            { Name: 'SIP_PORT', Value: '5060' },
+            { Name: 'SIP_HOST_NAME', Value: 'sip.praxis.test' },
+          ]),
+        }),
+      ],
+    });
+    const policies = JSON.stringify(voice?.findResources('AWS::IAM::Policy'));
+    expect(policies).toContain('route53:ChangeResourceRecordSetsNormalizedRecordNames');
+  });
+});

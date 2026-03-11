@@ -52,6 +52,21 @@ const DeploymentConfigSchema = z.object({
    * only opens a WebSocket over TLS, and TLS needs a name.
    */
   voice: z.boolean().default(false),
+  /**
+   * The phone line. Leave it out until the number is in the account's phone number inventory
+   * (product type "SIP media application dial-in"); everything else works without it. Needs
+   * `voice`.
+   */
+  telephony: z
+    .object({
+      /** The number callers dial, in E.164, e.g. +4930123456. */
+      phoneNumber: z
+        .string()
+        .regex(/^\+[1-9]\d{6,14}$/, 'Rufnummer im Format +4930123456 erwartet'),
+      /** Host name the Voice Connector sends calls to; defaults to sip.<zoneName>. */
+      sipHost: hostName.optional(),
+    })
+    .optional(),
 });
 
 export type DeploymentConfig = z.infer<typeof DeploymentConfigSchema>;
@@ -70,6 +85,9 @@ export function loadConfig(directory: string): DeploymentConfig {
   }
   if (parsed.data.voice && !parsed.data.domain) {
     throw new Error(`Invalid deployment config in ${file}: "voice" needs a "domain"`);
+  }
+  if (parsed.data.telephony && !parsed.data.voice) {
+    throw new Error(`Invalid deployment config in ${file}: "telephony" needs "voice": true`);
   }
   return parsed.data;
 }
