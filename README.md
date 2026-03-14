@@ -36,6 +36,10 @@ Den Assistenten spielt lokal ein Skript, das getippte Stichworte versteht („Te
 mit Nova Sonic auf Bedrock; dafür werden AWS-Zugangsdaten in der Shell und der freigeschaltete
 Modellzugriff in Stockholm gebraucht.
 
+Der Entwicklungsserver öffnet außerdem eine Telefonleitung auf `sip:praxis@127.0.0.1:5060`
+(SIP über UDP, G.711). Ein Softphone wie Linphone ruft dort an wie ein Patient. Für gesprochene
+Antworten braucht es `CALLISTO_MODEL=nova`, denn das Skript versteht keine Sprache.
+
 ## Ausrollen auf AWS
 
 Siehe [docs/konfiguration.md](docs/konfiguration.md).

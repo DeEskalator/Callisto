@@ -26,7 +26,8 @@ wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fe
   },
   "devOrigins": [],
   "waf": true,
-  "voice": true
+  "voice": true,
+  "telephony": { "phoneNumber": "+493012345000" }
 }
 ```
 
@@ -58,3 +59,22 @@ Docker laufen, weil das Container-Image beim Ausrollen gebaut wird.
 Der Sprachagent ruft Amazon Nova 2 Sonic in Stockholm (`eu-north-1`) auf, der einzigen
 EU-Region des Modells. Der Modellzugriff muss dort einmalig in der Bedrock-Konsole aktiviert
 werden.
+
+## Telefonie einschalten
+
+1. **Rufnummer bestellen:** In der Amazon-Chime-SDK-Konsole (Telefonnummernverwaltung) oder
+   über den AWS-Support eine deutsche Ortsnummer mit dem Produkttyp „SIP media application
+   dial-in“ anfordern. Dafür werden Gewerbenachweis und eine Adresse im Vorwahlbereich verlangt;
+   die Bereitstellung dauert mehrere Wochen. Alternativ lässt sich eine bestehende Nummer
+   portieren.
+2. **Zweite Nummer eintragen:** In der Weboberfläche unter Einstellungen → Praxis →
+   „Weiterleitung an“ die Nummer eintragen, zu der der Assistent verbindet. Sie darf nicht auf den
+   Assistenten umgeleitet sein.
+3. **Konfiguration ergänzen:** `"telephony": { "phoneNumber": "+49…" }` in `infra/config.json`
+   und `npm run deploy`.
+4. **Umleiten:** Die Telefonanlage der Praxis auf die neue Nummer umleiten (immer oder nur bei
+   Nichtannahme, je nach Wunsch).
+
+Ein Anruf kostet zusätzlich zu Nova Sonic wenige Cent pro Minute für Rufnummer, SIP Media
+Application und Voice Connector; verbunden zur Praxis kommt die Verbindung ins deutsche Festnetz
+hinzu.

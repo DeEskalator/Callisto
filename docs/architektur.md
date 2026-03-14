@@ -11,8 +11,9 @@ braucht keine Telefonnummer. Alles außer dem Agenten ist serverless und kostet 
 nichts.
 
 ```
-Patient ─ Telefonnetz ─► Chime SDK ─SIP─►┐            (Telefonie: noch offen)
-                                         ▼
+Patient ─ Telefonnetz ─► Chime SDK: SIP Media Application ─► Voice Connector
+                                  │ (Anrufablauf-Lambda)        │ SIP/RTP (G.711, 8 kHz)
+                                  └─► zweite Praxisnummer       ▼
  Browser-Testmodus ─WSS─► ALB ─► ┌─────────────────────────────┐
  (Sprache oder Text)             │ Voice-Agent · ECS Fargate   │ ◄─► Bedrock (Stockholm)
                                  │ Node/TypeScript             │     Nova 2 Sonic, Polly
@@ -50,18 +51,18 @@ Patient ─ Telefonnetz ─► Chime SDK ─SIP─►┐            (Telefonie: 
 
 ## Bausteine
 
-| Bereich       | Wahl                                                 | Grund                                                                                                                      |
-| ------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Sprachmodell  | Nova 2 Sonic, Bedrock in Stockholm                   | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                       |
-| Agent         | ECS Fargate hinter einem Application Load Balancer   | Ein Gespräch ist ein langlebiger Audiostrom, den Lambda nicht halten kann; der ALB bringt TLS für die WebSocket-Verbindung |
-| Telefonie     | Chime SDK: Nummer, SIP Media App, Voice Connector    | Noch offen (siehe unten)                                                                                                   |
-| API           | API Gateway (REST) und Lambda (TypeScript, Hono)     | Token- und Scope-Prüfung am Gateway, Usage Plans für Integrationen                                                         |
-| Daten         | DynamoDB, zwei Tabellen                              | Millisekunden-Zugriffe im Gespräch, keine Leerlaufkosten                                                                   |
-| Ereignisse    | DynamoDB Stream → EventBridge Pipe → EventBridge-Bus | Jede Änderung an einem Anliegen wird ein Ereignis (nur IDs, keine Patientendaten); hier dockt eine PVS-Anbindung an        |
-| Live-Updates  | Abfrage alle 10 Sekunden                             | Für wenige Arbeitsplätze einfacher und günstiger als ein Push-Kanal (siehe unten)                                          |
-| Weboberfläche | React und TypeScript auf S3 und CloudFront           | Statische Auslieferung; `/v1` wird über CloudFront an die API gereicht, daher kein CORS                                    |
-| Anmeldung     | Cognito, Managed Login, Authorization Code mit PKCE  | Zugangsdaten berühren unseren Code nie; Zwei-Faktor ist Pflicht                                                            |
-| Infrastruktur | CDK (TypeScript)                                     | Eine Umgebung entsteht mit einem Befehl                                                                                    |
+| Bereich       | Wahl                                                                           | Grund                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Sprachmodell  | Nova 2 Sonic, Bedrock in Stockholm                                             | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                       |
+| Agent         | ECS Fargate hinter einem Application Load Balancer                             | Ein Gespräch ist ein langlebiger Audiostrom, den Lambda nicht halten kann; der ALB bringt TLS für die WebSocket-Verbindung |
+| Telefonie     | Chime SDK (Nummer, SIP Media Application, Voice Connector); SIP/RTP im Agenten | Kein eigener Telefonie-Server nötig; verbindet zur Praxis auch, wenn der Agent ausfällt                                    |
+| API           | API Gateway (REST) und Lambda (TypeScript, Hono)                               | Token- und Scope-Prüfung am Gateway, Usage Plans für Integrationen                                                         |
+| Daten         | DynamoDB, zwei Tabellen                                                        | Millisekunden-Zugriffe im Gespräch, keine Leerlaufkosten                                                                   |
+| Ereignisse    | DynamoDB Stream → EventBridge Pipe → EventBridge-Bus                           | Jede Änderung an einem Anliegen wird ein Ereignis (nur IDs, keine Patientendaten); hier dockt eine PVS-Anbindung an        |
+| Live-Updates  | Abfrage alle 10 Sekunden                                                       | Für wenige Arbeitsplätze einfacher und günstiger als ein Push-Kanal (siehe unten)                                          |
+| Weboberfläche | React und TypeScript auf S3 und CloudFront                                     | Statische Auslieferung; `/v1` wird über CloudFront an die API gereicht, daher kein CORS                                    |
+| Anmeldung     | Cognito, Managed Login, Authorization Code mit PKCE                            | Zugangsdaten berühren unseren Code nie; Zwei-Faktor ist Pflicht                                                            |
+| Infrastruktur | CDK (TypeScript)                                                               | Eine Umgebung entsteht mit einem Befehl                                                                                    |
 
 ## Daten
 
@@ -141,26 +142,38 @@ WebSocket-Verbindung nur über TLS auf, und Fargate-Tasks haben keine feste Adre
 
 ## Stand
 
-| Teil                                                                                     | Stand                                                                          |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Datenmodell, Anmeldung, API, Infrastruktur                                               | umgesetzt, lokal getestet, noch nicht ausgerollt                               |
-| Einstellungen: Sprechzeiten, Schließzeiten, Ansagen, Kategorien, Slots, Benutzer, Rollen | umgesetzt                                                                      |
-| Sprachagent mit Testmodus (Text und Sprache)                                             | umgesetzt; lokal mit einem Skript-Modell getestet, gegen Nova Sonic noch nicht |
-| Tagesgeschehen: Anliegen, Anrufe, Transkripte                                            | umgesetzt                                                                      |
-| Anliegen-Ereignisse für eine PVS-Anbindung                                               | umgesetzt (EventBridge), noch ohne Abnehmer                                    |
-| Telefonie                                                                                | offen                                                                          |
+| Teil                                                                                     | Stand                                                                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Datenmodell, Anmeldung, API, Infrastruktur                                               | umgesetzt, lokal getestet, noch nicht ausgerollt                                            |
+| Einstellungen: Sprechzeiten, Schließzeiten, Ansagen, Kategorien, Slots, Benutzer, Rollen | umgesetzt                                                                                   |
+| Sprachagent mit Testmodus (Text und Sprache)                                             | umgesetzt; lokal mit einem Skript-Modell getestet, gegen Nova Sonic noch nicht              |
+| Tagesgeschehen: Anliegen, Anrufe, Transkripte                                            | umgesetzt                                                                                   |
+| Anliegen-Ereignisse für eine PVS-Anbindung                                               | umgesetzt (EventBridge), noch ohne Abnehmer                                                 |
+| Telefonie                                                                                | umgesetzt und mit einem simulierten Telefon getestet; gegen eine echte Rufnummer noch nicht |
 
-### Telefonie (offen)
+### Telefonie
 
-Für die Telefonie fehlen eine deutsche Rufnummer und der Weg vom Telefonnetz in den Agenten:
+Ein Anruf auf die Praxisnummer läuft so:
 
-1. **Rufnummer:** Bestellung über den AWS-Support mit Gewerbenachweis und Adresse im
-   Vorwahlbereich, Vorlauf mehrere Wochen.
-2. **Chime SDK:** SIP Media Application und Voice Connector. Für beide gibt es keine
-   CloudFormation-Ressourcen; sie werden über Custom Resources angelegt.
-3. **Brücke in den Agenten:** Ein Asterisk-Container neben dem Agenten nimmt SIP/RTP vom Voice
-   Connector an und reicht das Audio (8 kHz) über AudioSocket an den Agenten. Die
-   Gesprächssitzung ist dafür vorbereitet: Telefon und Testmodus sind nur verschiedene
-   `CallerLink`s derselben `ConversationSession`.
-4. **Ausfallweg:** Ist der Agent nicht erreichbar, verbindet die SIP Media Application direkt auf
-   die zweite Rufnummer der Praxis.
+1. Die **SIP Media Application** (Chime SDK) nimmt ihn an und ruft für jedes Ereignis die
+   Anrufablauf-Lambda auf (`services/api/src/telephony/call-flow.ts`).
+2. Diese verbindet den Anruf über den **Voice Connector** mit dem Sprachagenten
+   (`CallAndBridge`) und gibt die Kennung des Anrufs als SIP-Header mit.
+3. Der **Sprachagent** nimmt den Anruf selbst per SIP an (`services/voice-agent/src/telephony`):
+   G.711 über RTP, 8 kHz, dieselbe Gesprächssitzung wie der Testanruf.
+4. **Verbinden:** Der Agent vermerkt den Wunsch in der Datenbank und legt auf. Die
+   Anrufablauf-Lambda sieht den Vermerk und verbindet den Anrufer mit der zweiten Rufnummer der
+   Praxis (Einstellungen → Praxis → „Weiterleitung an“).
+5. **Ausfall:** Ist der Agent nicht erreichbar, verbindet die Lambda direkt mit der Praxis.
+6. **Notfall:** Der Agent sagt den Satz mit der 112 vollständig an und legt dann auf.
+
+Der Sprachagent hat keine feste Adresse. Jeder Container trägt beim Start seine öffentliche
+Adresse unter `sip.<domain>` ein; dorthin schickt der Voice Connector die Anrufe. SIP und RTP
+sind in der Firewall nur für den Adressbereich der Voice Connectoren in Frankfurt offen.
+
+Zwischen Voice Connector und Agent laufen SIP und RTP unverschlüsselt, aber nur innerhalb des
+AWS-Netzes. Das Telefonnetz davor ist ohnehin unverschlüsselt. Wer das ändern will: TLS und SRTP
+am Voice Connector einschalten und im Agenten ergänzen.
+
+Für Chime SDK gibt es keine CloudFormation-Ressourcen. Voice Connector, SIP Media Application und
+SIP-Regel legt deshalb eine Custom Resource an (`services/api/src/telephony/provision.ts`).
