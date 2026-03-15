@@ -70,9 +70,14 @@ export function TestCallDialog(props: { onClose: () => void }) {
     setPhase('connecting');
     try {
       const { url, ticket } = await data(api.admin['test-sessions'].$post());
-      const connection = new WebSocket(
-        `${url}?ticket=${encodeURIComponent(ticket)}&mode=${chosen}`,
-      );
+      // Deployed, the address is relative (the app's own); locally it points at the dev server.
+      const address = new URL(url, window.location.href);
+      if (address.protocol === 'https:' || address.protocol === 'http:') {
+        address.protocol = address.protocol === 'https:' ? 'wss:' : 'ws:';
+      }
+      address.searchParams.set('ticket', ticket);
+      address.searchParams.set('mode', chosen);
+      const connection = new WebSocket(address);
       connection.binaryType = 'arraybuffer';
       socket.current = connection;
 

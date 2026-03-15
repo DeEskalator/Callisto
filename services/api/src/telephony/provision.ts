@@ -6,7 +6,6 @@ import {
   DeleteSipMediaApplicationCommand,
   DeleteSipRuleCommand,
   DeleteVoiceConnectorCommand,
-  PutVoiceConnectorOriginationCommand,
   UpdateSipMediaApplicationCommand,
   UpdateSipRuleCommand,
   type VoiceConnectorAwsRegion,
@@ -17,8 +16,9 @@ import type { CloudFormationCustomResourceEvent } from 'aws-lambda';
  * Creates, updates and deletes the Amazon Chime SDK resources of the phone line. CloudFormation
  * has no resource types for them, so the stack declares them as custom resources handled here.
  *
- * - `VoiceConnector`: the SIP trunk to the voice agent, with the agent's host name as its only
- *   origination route.
+ * - `VoiceConnector`: the SIP trunk to the voice agent. Where it sends calls (its origination
+ *   route) is set by the voice agent's container when it starts, because only the container knows
+ *   its address.
  * - `SipMediaApplication`: runs the call flow Lambda for every call to the phone number, together
  *   with the SIP rule that sends calls to the number there.
  */
@@ -27,8 +27,6 @@ interface VoiceConnectorProps {
   Kind: 'VoiceConnector';
   Name: string;
   Region: string;
-  Host: string;
-  Port: string;
 }
 
 interface SipMediaApplicationProps {
@@ -60,20 +58,6 @@ async function ignoreNotFound(action: () => Promise<unknown>): Promise<void> {
 
 // ── Voice Connector ─────────────────────────────────────────────────────────────
 
-async function putOrigination(client: ChimeSDKVoiceClient, id: string, props: VoiceConnectorProps) {
-  await client.send(
-    new PutVoiceConnectorOriginationCommand({
-      VoiceConnectorId: id,
-      Origination: {
-        Disabled: false,
-        Routes: [
-          { Host: props.Host, Port: Number(props.Port), Protocol: 'UDP', Priority: 1, Weight: 1 },
-        ],
-      },
-    }),
-  );
-}
-
 async function voiceConnector(
   event: CloudFormationCustomResourceEvent,
   props: VoiceConnectorProps,
@@ -88,6 +72,7 @@ async function voiceConnector(
 
   let id = event.RequestType === 'Update' ? event.PhysicalResourceId : undefined;
   let arn: string | undefined;
+  // An update keeps the connector, so the address the running container entered stays.
   if (!id) {
     const created = await client.send(
       new CreateVoiceConnectorCommand({
@@ -104,7 +89,6 @@ async function voiceConnector(
       throw new Error('The Voice Connector was created without an id');
     }
   }
-  await putOrigination(client, id, props);
   return {
     PhysicalResourceId: id,
     Data: {

@@ -2,7 +2,6 @@ import { CfnOutput, CustomResource, Duration, Stack } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import type * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 import type { DeploymentConfig } from './config';
@@ -32,30 +31,28 @@ export interface TelephonyProps {
   /** The voice agent's service; the phone line is opened on its containers. */
   service: ecs.FargateService;
   container: ecs.ContainerDefinition;
-  zone: route53.IHostedZone;
 }
 
 /**
  * The phone line: the practice's number, a SIP media application that runs the call flow, and a
  * Voice Connector that carries calls to the voice agent over SIP.
  *
- * The voice agent's containers have no fixed address. Each one points the SIP host name at its
- * own public address when it starts, and the Voice Connector sends calls to that name.
+ * The voice agent's containers have no fixed address. Each one enters its own public address as
+ * the Voice Connector's destination when it starts, so no domain is needed for the line.
  */
 export class Telephony extends Construct {
   constructor(scope: Construct, id: string, props: TelephonyProps) {
     super(scope, id);
-    const { config, data, service, container, zone } = props;
+    const { config, data, service, container } = props;
     const telephony = config.telephony;
-    if (!telephony || !config.domain) {
-      throw new Error('Telephony needs a phone number and a domain');
+    if (!telephony) {
+      throw new Error('Telephony needs a phone number');
     }
     const region = Stack.of(this).region;
     const cidr = VOICE_CONNECTOR_CIDRS[region];
     if (!cidr) {
       throw new Error(`No Voice Connector address range is known for ${region}`);
     }
-    const sipHost = telephony.sipHost ?? `sip.${config.domain.zoneName}`;
     const name = `callisto-${config.stage}`;
 
     // ── The voice agent opens the line ───────────────────────────────────────
@@ -66,31 +63,6 @@ export class Telephony extends Construct {
     container.addEnvironment('SIP_PORT', String(SIP_PORT));
     container.addEnvironment('RTP_PORTS', `${RTP_PORTS.min}-${RTP_PORTS.max}`);
     container.addEnvironment('PRACTICE_ID', config.practice.id);
-    container.addEnvironment('SIP_HOSTED_ZONE_ID', zone.hostedZoneId);
-    container.addEnvironment('SIP_HOST_NAME', sipHost);
-
-    // The record exists before the first container, so that it is managed (and removed) by the
-    // stack. Containers overwrite the placeholder with their address.
-    const record = new route53.ARecord(this, 'SipHost', {
-      zone,
-      recordName: sipHost,
-      target: route53.RecordTarget.fromIpAddresses('192.0.2.1'),
-      ttl: Duration.seconds(60),
-    });
-    service.node.addDependency(record);
-    service.taskDefinition.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: ['route53:ChangeResourceRecordSets'],
-        resources: [zone.hostedZoneArn],
-        conditions: {
-          'ForAllValues:StringEquals': {
-            'route53:ChangeResourceRecordSetsNormalizedRecordNames': [sipHost],
-            'route53:ChangeResourceRecordSetsRecordTypes': ['A'],
-          },
-        },
-      }),
-    );
-
     // ── Amazon Chime SDK resources (no CloudFormation types; custom resources) ──
 
     const provisioner = new ServiceFunction(this, 'Provisioner', {
@@ -130,14 +102,18 @@ export class Telephony extends Construct {
     const voiceConnector = new CustomResource(this, 'VoiceConnector', {
       serviceToken: provider.serviceToken,
       resourceType: 'Custom::ChimeVoiceConnector',
-      properties: {
-        Kind: 'VoiceConnector',
-        Name: name,
-        Region: region,
-        Host: sipHost,
-        Port: String(SIP_PORT),
-      },
+      properties: { Kind: 'VoiceConnector', Name: name, Region: region },
     });
+
+    // The container tells the Voice Connector where to send calls: to its own address.
+    container.addEnvironment('VOICE_CONNECTOR_ID', voiceConnector.getAttString('VoiceConnectorId'));
+    container.addEnvironment('VOICE_CONNECTOR_REGION', region);
+    service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['chime:PutVoiceConnectorOrigination'],
+        resources: [voiceConnector.getAttString('VoiceConnectorArn')],
+      }),
+    );
 
     const callFlow = new ServiceFunction(this, 'CallFlow', {
       entry: 'services/api/src/telephony/handler.ts',
@@ -173,6 +149,5 @@ export class Telephony extends Construct {
     application.node.addDependency(callFlow);
 
     new CfnOutput(this, 'PhoneNumber', { value: telephony.phoneNumber });
-    new CfnOutput(this, 'SipHostName', { value: sipHost });
   }
 }

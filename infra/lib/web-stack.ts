@@ -11,6 +11,7 @@ import type { Construct } from 'constructs';
 import type { ApiStack } from './api-stack';
 import type { AuthStack } from './auth-stack';
 import type { DeploymentConfig } from './config';
+import { VOICE_PATH, type VoiceStack } from './voice-stack';
 
 export interface WebStackProps extends StackProps {
   config: DeploymentConfig;
@@ -19,7 +20,9 @@ export interface WebStackProps extends StackProps {
   /** The built web app (`apps/web/dist`). */
   assetDir: string;
   /** Certificate for the app's own domain, from us-east-1; required when a domain is configured. */
-  certificate?: acm.ICertificate;
+  certificate?: acm.ICertificate | undefined;
+  /** The voice agent, if deployed; test calls reach it under the app's address. */
+  voice?: VoiceStack | undefined;
 }
 
 // Single-page app: every address without a file extension is answered with index.html, and the
@@ -33,9 +36,9 @@ const SPA_ROUTING = `function handler(event) {
 }`;
 
 /**
- * Delivers the web app. CloudFront serves the static files from S3 and passes `/v1/*` on to the
- * API, so the app and its API share one address: no CORS, and the browser never talks to an
- * AWS-generated hostname.
+ * Delivers the web app. CloudFront serves the static files from S3, passes `/v1/*` on to the API
+ * and `/voice` (WebSocket) to the voice agent. App, API and test calls share one address: no
+ * CORS, one certificate, and without an own domain CloudFront's address works just as well.
  */
 export class WebStack extends Stack {
   readonly appUrl: string;
@@ -58,7 +61,6 @@ export class WebStack extends Stack {
       autoDeleteObjects: true,
     });
 
-    const voiceOrigin = config.domain && config.voice ? ` wss://${config.domain.voiceHost}` : '';
     const securityHeaders = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeaders', {
       comment: 'Callisto: security headers of the web app',
       securityHeadersBehavior: {
@@ -71,7 +73,8 @@ export class WebStack extends Stack {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data:",
             "font-src 'self'",
-            `connect-src 'self' https://cognito-idp.${this.region}.amazonaws.com https://*.amazoncognito.com${voiceOrigin}`,
+            // 'self' includes wss:// on the same address, i.e. the test call.
+            `connect-src 'self' https://cognito-idp.${this.region}.amazonaws.com https://*.amazoncognito.com`,
             "frame-ancestors 'none'",
             "base-uri 'none'",
             "form-action 'self' https://*.amazoncognito.com",
@@ -145,6 +148,20 @@ export class WebStack extends Stack {
           originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           responseHeadersPolicy: securityHeaders,
         },
+        ...(props.voice
+          ? {
+              [`${VOICE_PATH}*`]: {
+                origin: origins.VpcOrigin.withApplicationLoadBalancer(props.voice.loadBalancer, {
+                  protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                  httpPort: 80,
+                }),
+                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+                cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+                // The WebSocket handshake needs its Upgrade and Sec-WebSocket-* headers.
+                originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+              },
+            }
+          : {}),
       },
     });
 

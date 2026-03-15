@@ -5,7 +5,7 @@ import { AuthStack } from '../lib/auth-stack';
 import { loadConfig } from '../lib/config';
 import { DataStack } from '../lib/data-stack';
 import { EdgeCertificateStack } from '../lib/edge-certificate-stack';
-import { VoiceStack } from '../lib/voice-stack';
+import { VOICE_PATH, VoiceStack } from '../lib/voice-stack';
 import { WebStack } from '../lib/web-stack';
 
 const app = new App();
@@ -24,7 +24,8 @@ const api = new ApiStack(app, `${prefix}-Api`, {
   config,
   data,
   auth,
-  voiceUrl: voice?.voiceUrl,
+  // Relative: the test call opens the WebSocket on the app's own address.
+  voiceUrl: voice ? VOICE_PATH : undefined,
 });
 
 const certificate = config.domain
@@ -44,6 +45,7 @@ new WebStack(app, `${prefix}-Web`, {
   api,
   assetDir: join(import.meta.dirname, '..', '..', 'apps', 'web', 'dist'),
   certificate,
+  voice,
 });
 
 Tags.of(app).add('project', 'callisto');

@@ -14,7 +14,7 @@ import { NOVA_SONIC_DEFAULTS, NovaSonicModel } from './nova-sonic-model';
 import { attachVoiceServer } from './server';
 import type { SessionDeps } from './session';
 import { PollySpeechSynthesizer } from './speech';
-import { detectPublicAddress, publishSipAddress } from './telephony/public-address';
+import { detectPublicAddress, registerWithVoiceConnector } from './telephony/public-address';
 import { SipServer } from './telephony/sip-server';
 
 function requireEnv(name: string): string {
@@ -85,13 +85,14 @@ if (process.env.SIP_PORT) {
   });
   await phone.start();
   log('Phone line ready', { publicAddress, sipPort: process.env.SIP_PORT });
-  if (process.env.SIP_HOSTED_ZONE_ID && process.env.SIP_HOST_NAME) {
-    await publishSipAddress({
-      hostedZoneId: process.env.SIP_HOSTED_ZONE_ID,
-      hostName: process.env.SIP_HOST_NAME,
+  if (process.env.VOICE_CONNECTOR_ID) {
+    await registerWithVoiceConnector({
+      voiceConnectorId: process.env.VOICE_CONNECTOR_ID,
+      region: requireEnv('VOICE_CONNECTOR_REGION'),
       address: publicAddress,
+      port: Number(process.env.SIP_PORT),
     });
-    log('SIP host name now points at this container', { host: process.env.SIP_HOST_NAME });
+    log('The Voice Connector now sends calls to this container', { publicAddress });
   }
 }
 

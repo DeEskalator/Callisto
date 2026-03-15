@@ -1,4 +1,7 @@
-import { ChangeResourceRecordSetsCommand, Route53Client } from '@aws-sdk/client-route-53';
+import {
+  ChimeSDKVoiceClient,
+  PutVoiceConnectorOriginationCommand,
+} from '@aws-sdk/client-chime-sdk-voice';
 
 /**
  * The public IPv4 address of this container. Fargate tasks get a new one on every start, and
@@ -16,30 +19,22 @@ export async function detectPublicAddress(): Promise<string> {
 }
 
 /**
- * Points the SIP host name at this container. The Voice Connector sends calls to that name, so
- * a new container takes over new calls about a minute after it starts (the record's TTL), while
- * the old one finishes the calls it has.
+ * Makes the Voice Connector send calls to this container. A new container takes over new calls
+ * as soon as it has started, while the old one finishes the calls it has.
  */
-export async function publishSipAddress(options: {
-  hostedZoneId: string;
-  hostName: string;
+export async function registerWithVoiceConnector(options: {
+  voiceConnectorId: string;
+  region: string;
   address: string;
+  port: number;
 }): Promise<void> {
-  await new Route53Client({}).send(
-    new ChangeResourceRecordSetsCommand({
-      HostedZoneId: options.hostedZoneId,
-      ChangeBatch: {
-        Comment: 'Callisto voice agent started',
-        Changes: [
-          {
-            Action: 'UPSERT',
-            ResourceRecordSet: {
-              Name: options.hostName,
-              Type: 'A',
-              TTL: 60,
-              ResourceRecords: [{ Value: options.address }],
-            },
-          },
+  await new ChimeSDKVoiceClient({ region: options.region }).send(
+    new PutVoiceConnectorOriginationCommand({
+      VoiceConnectorId: options.voiceConnectorId,
+      Origination: {
+        Disabled: false,
+        Routes: [
+          { Host: options.address, Port: options.port, Protocol: 'UDP', Priority: 1, Weight: 1 },
         ],
       },
     }),

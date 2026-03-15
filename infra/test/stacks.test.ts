@@ -17,7 +17,6 @@ const domain = {
   zoneName: 'praxis.test',
   appHost: 'app.praxis.test',
   apiHost: 'api.praxis.test',
-  voiceHost: 'voice.praxis.test',
 };
 
 const baseConfig: DeploymentConfig = {
@@ -49,7 +48,13 @@ function synth(overrides: Partial<DeploymentConfig> = {}) {
   const data = new DataStack(app, 'Data', { env, config });
   const auth = new AuthStack(app, 'Auth', { env, config });
   const voice = config.voice ? new VoiceStack(app, 'Voice', { env, config, data }) : undefined;
-  const api = new ApiStack(app, 'Api', { env, config, data, auth, voiceUrl: voice?.voiceUrl });
+  const api = new ApiStack(app, 'Api', {
+    env,
+    config,
+    data,
+    auth,
+    voiceUrl: voice ? '/voice' : undefined,
+  });
   const certificate = config.domain
     ? new EdgeCertificateStack(app, 'Cert', {
         env: { account: '111111111111', region: 'us-east-1' },
@@ -67,6 +72,7 @@ function synth(overrides: Partial<DeploymentConfig> = {}) {
     api,
     assetDir,
     certificate,
+    voice,
   });
   return {
     data: Template.fromStack(data),
@@ -162,13 +168,16 @@ describe('web stack', () => {
     });
   });
 
-  it('sends a content security policy that allows the voice agent only when it exists', () => {
-    const csp = (template: Template) =>
-      Object.values(template.findResources('AWS::CloudFront::ResponseHeadersPolicy'))[0]?.Properties
-        .ResponseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy
-        .ContentSecurityPolicy as string;
-    expect(csp(synth().web)).not.toContain('wss://');
-    expect(csp(synth({ domain, voice: true }).web)).toContain('wss://voice.praxis.test');
+  it("sends test calls under the app's own address to the voice agent", () => {
+    const behaviors = (template: Template) =>
+      Object.values(template.findResources('AWS::CloudFront::Distribution'))[0]?.Properties
+        .DistributionConfig.CacheBehaviors as Array<{ PathPattern: string }>;
+    expect(behaviors(synth().web).map((behavior) => behavior.PathPattern)).toEqual(['/v1/*']);
+    expect(behaviors(synth({ voice: true }).web).map((behavior) => behavior.PathPattern)).toEqual([
+      '/v1/*',
+      '/voice*',
+    ]);
+    synth({ voice: true }).web.resourceCountIs('AWS::CloudFront::VpcOrigin', 1);
   });
 });
 
@@ -231,36 +240,50 @@ describe('api stack', () => {
 });
 
 describe('voice stack', () => {
-  it('runs the agent behind an HTTPS load balancer that tolerates long silences', () => {
-    const { voice } = synth({ domain, voice: true });
-    voice?.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', { Protocol: 'HTTPS' });
+  it('runs without an own domain, behind a private load balancer that tolerates long silences', () => {
+    const { voice } = synth({ voice: true });
     voice?.hasResourceProperties('AWS::ElasticLoadBalancingV2::LoadBalancer', {
+      Scheme: 'internal',
       LoadBalancerAttributes: Match.arrayWith([
         { Key: 'idle_timeout.timeout_seconds', Value: '1800' },
       ]),
     });
+    voice?.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', { Protocol: 'HTTP' });
+    voice?.resourceCountIs('AWS::CertificateManager::Certificate', 0);
     voice?.hasResourceProperties('AWS::ECS::TaskDefinition', {
       RuntimePlatform: { CpuArchitecture: 'ARM64', OperatingSystemFamily: 'LINUX' },
     });
   });
 
+  it('lets only CloudFront reach the load balancer', () => {
+    const { voice } = synth({ voice: true });
+    const groups = Object.values(voice?.findResources('AWS::EC2::SecurityGroup') ?? {});
+    const open = groups.flatMap((group) => group.Properties.SecurityGroupIngress ?? []);
+    expect(open.some((rule: { CidrIp?: string }) => rule.CidrIp === '0.0.0.0/0')).toBe(false);
+    const ingress = Object.values(voice?.findResources('AWS::EC2::SecurityGroupIngress') ?? {});
+    expect(
+      ingress.some(
+        (rule) =>
+          rule.Properties.SourcePrefixListId !== undefined && rule.Properties.FromPort === 80,
+      ),
+    ).toBe(true);
+  });
+
   it('needs no NAT gateway', () => {
-    synth({ domain, voice: true }).voice?.resourceCountIs('AWS::EC2::NatGateway', 0);
+    synth({ voice: true }).voice?.resourceCountIs('AWS::EC2::NatGateway', 0);
   });
 
   it('may call exactly Nova Sonic in Stockholm', () => {
-    const { voice } = synth({ domain, voice: true });
+    const { voice } = synth({ voice: true });
     const policies = JSON.stringify(voice?.findResources('AWS::IAM::Policy'));
     expect(policies).toContain('bedrock:InvokeModelWithBidirectionalStream');
     expect(policies).toContain('bedrock:eu-north-1::foundation-model/amazon.nova-2-sonic-v1:0');
   });
 
   it('tells the API where test conversations are held', () => {
-    const { api } = synth({ domain, voice: true });
+    const { api } = synth({ voice: true });
     api.hasResourceProperties('AWS::Lambda::Function', {
-      Environment: {
-        Variables: Match.objectLike({ VOICE_URL: 'wss://voice.praxis.test/voice' }),
-      },
+      Environment: { Variables: Match.objectLike({ VOICE_URL: '/voice' }) },
     });
   });
 });
@@ -269,18 +292,16 @@ describe('telephony', () => {
   const telephony = { phoneNumber: '+493012345000' };
 
   it('is not there until a phone number is configured', () => {
-    const { voice } = synth({ domain, voice: true });
+    const { voice } = synth({ voice: true });
     voice?.resourceCountIs('Custom::ChimeVoiceConnector', 0);
     voice?.resourceCountIs('Custom::ChimeSipMediaApplication', 0);
   });
 
   it('creates Voice Connector and SIP media application for the number', () => {
-    const { voice } = synth({ domain, voice: true, telephony });
+    const { voice } = synth({ voice: true, telephony });
     voice?.hasResourceProperties('Custom::ChimeVoiceConnector', {
       Kind: 'VoiceConnector',
       Region: 'eu-central-1',
-      Host: 'sip.praxis.test',
-      Port: '5060',
     });
     voice?.hasResourceProperties('Custom::ChimeSipMediaApplication', {
       Kind: 'SipMediaApplication',
@@ -292,7 +313,7 @@ describe('telephony', () => {
   });
 
   it('opens SIP and RTP only to the Voice Connector address range', () => {
-    const { voice } = synth({ domain, voice: true, telephony });
+    const { voice } = synth({ voice: true, telephony });
     // Rules to address ranges are inline in the security group, rules between groups separate.
     const ingress = [
       ...Object.values(voice?.findResources('AWS::EC2::SecurityGroupIngress') ?? {}).map(
@@ -311,23 +332,24 @@ describe('telephony', () => {
     expect(ingress.every((rule) => rule.CidrIp === '99.77.247.0/24')).toBe(true);
   });
 
-  it('lets the container publish its address under the SIP host name only', () => {
-    const { voice } = synth({ domain, voice: true, telephony });
-    voice?.hasResourceProperties('AWS::Route53::RecordSet', {
-      Name: 'sip.praxis.test.',
-      Type: 'A',
-    });
+  it('lets the container enter its own address at the Voice Connector, and nothing else', () => {
+    const { voice } = synth({ voice: true, telephony });
     voice?.hasResourceProperties('AWS::ECS::TaskDefinition', {
       ContainerDefinitions: [
         Match.objectLike({
           Environment: Match.arrayWith([
             { Name: 'SIP_PORT', Value: '5060' },
-            { Name: 'SIP_HOST_NAME', Value: 'sip.praxis.test' },
+            { Name: 'VOICE_CONNECTOR_REGION', Value: 'eu-central-1' },
           ]),
         }),
       ],
     });
-    const policies = JSON.stringify(voice?.findResources('AWS::IAM::Policy'));
-    expect(policies).toContain('route53:ChangeResourceRecordSetsNormalizedRecordNames');
+    const policies = Object.values(voice?.findResources('AWS::IAM::Policy') ?? {});
+    const task = policies.find((policy) =>
+      JSON.stringify(policy.Properties.Roles).includes('TaskRole'),
+    );
+    const statement = JSON.stringify(task?.Properties.PolicyDocument);
+    expect(statement).toContain('chime:PutVoiceConnectorOrigination');
+    expect(statement).not.toContain('chime:Create');
   });
 });

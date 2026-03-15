@@ -11,6 +11,7 @@ export interface VoiceServerDeps extends SessionDeps {
 
 /** Path of the WebSocket endpoint for test conversations from the web app. */
 export const VOICE_PATH = '/voice';
+const HEARTBEAT_MS = 25_000;
 
 /*
  * Protocol of a test conversation.
@@ -94,6 +95,16 @@ async function converse(socket: WebSocket, request: IncomingMessage, deps: Voice
 /** Serves test conversations on an existing HTTP server. */
 export function attachVoiceServer(server: Server, deps: VoiceServerDeps): WebSocketServer {
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
+
+  // Proxies on the way (CloudFront, the load balancer) close connections that stay silent too
+  // long; in a typed conversation nothing may flow for minutes. A ping keeps them open.
+  const heartbeat = setInterval(() => {
+    for (const client of sockets.clients) {
+      client.ping();
+    }
+  }, HEARTBEAT_MS);
+  heartbeat.unref();
+  sockets.on('close', () => clearInterval(heartbeat));
   server.on('upgrade', (request, socket, head) => {
     if (!request.url?.startsWith(VOICE_PATH)) {
       socket.destroy();
