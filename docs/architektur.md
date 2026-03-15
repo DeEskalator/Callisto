@@ -14,7 +14,7 @@ nichts.
 Patient ─ Telefonnetz ─► Chime SDK: SIP Media Application ─► Voice Connector
                                   │ (Anrufablauf-Lambda)        │ SIP/RTP (G.711, 8 kHz)
                                   └─► zweite Praxisnummer       ▼
- Browser-Testmodus ─WSS─► ALB ─► ┌─────────────────────────────┐
+ Browser-Testmodus ─WSS─► CloudFront /voice ─► ALB (privat) ─► ┌──────────────┐
  (Sprache oder Text)             │ Voice-Agent · ECS Fargate   │ ◄─► Bedrock (Stockholm)
                                  │ Node/TypeScript             │     Nova 2 Sonic, Polly
                                  └──────────────┬──────────────┘
@@ -51,18 +51,18 @@ Patient ─ Telefonnetz ─► Chime SDK: SIP Media Application ─► Voice Con
 
 ## Bausteine
 
-| Bereich       | Wahl                                                                           | Grund                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Sprachmodell  | Nova 2 Sonic, Bedrock in Stockholm                                             | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                       |
-| Agent         | ECS Fargate hinter einem Application Load Balancer                             | Ein Gespräch ist ein langlebiger Audiostrom, den Lambda nicht halten kann; der ALB bringt TLS für die WebSocket-Verbindung |
-| Telefonie     | Chime SDK (Nummer, SIP Media Application, Voice Connector); SIP/RTP im Agenten | Kein eigener Telefonie-Server nötig; verbindet zur Praxis auch, wenn der Agent ausfällt                                    |
-| API           | API Gateway (REST) und Lambda (TypeScript, Hono)                               | Token- und Scope-Prüfung am Gateway, Usage Plans für Integrationen                                                         |
-| Daten         | DynamoDB, zwei Tabellen                                                        | Millisekunden-Zugriffe im Gespräch, keine Leerlaufkosten                                                                   |
-| Ereignisse    | DynamoDB Stream → EventBridge Pipe → EventBridge-Bus                           | Jede Änderung an einem Anliegen wird ein Ereignis (nur IDs, keine Patientendaten); hier dockt eine PVS-Anbindung an        |
-| Live-Updates  | Abfrage alle 10 Sekunden                                                       | Für wenige Arbeitsplätze einfacher und günstiger als ein Push-Kanal (siehe unten)                                          |
-| Weboberfläche | React und TypeScript auf S3 und CloudFront                                     | Statische Auslieferung; `/v1` wird über CloudFront an die API gereicht, daher kein CORS                                    |
-| Anmeldung     | Cognito, Managed Login, Authorization Code mit PKCE                            | Zugangsdaten berühren unseren Code nie; Zwei-Faktor ist Pflicht                                                            |
-| Infrastruktur | CDK (TypeScript)                                                               | Eine Umgebung entsteht mit einem Befehl                                                                                    |
+| Bereich       | Wahl                                                                           | Grund                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Sprachmodell  | Nova 2 Sonic, Bedrock in Stockholm                                             | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                                 |
+| Agent         | ECS Fargate hinter einem privaten Load Balancer, erreichbar über CloudFront    | Ein Gespräch ist ein langlebiger Audiostrom, den Lambda nicht halten kann; TLS kommt von CloudFront, daher keine eigene Domain nötig |
+| Telefonie     | Chime SDK (Nummer, SIP Media Application, Voice Connector); SIP/RTP im Agenten | Kein eigener Telefonie-Server nötig; verbindet zur Praxis auch, wenn der Agent ausfällt                                              |
+| API           | API Gateway (REST) und Lambda (TypeScript, Hono)                               | Token- und Scope-Prüfung am Gateway, Usage Plans für Integrationen                                                                   |
+| Daten         | DynamoDB, zwei Tabellen                                                        | Millisekunden-Zugriffe im Gespräch, keine Leerlaufkosten                                                                             |
+| Ereignisse    | DynamoDB Stream → EventBridge Pipe → EventBridge-Bus                           | Jede Änderung an einem Anliegen wird ein Ereignis (nur IDs, keine Patientendaten); hier dockt eine PVS-Anbindung an                  |
+| Live-Updates  | Abfrage alle 10 Sekunden                                                       | Für wenige Arbeitsplätze einfacher und günstiger als ein Push-Kanal (siehe unten)                                                    |
+| Weboberfläche | React und TypeScript auf S3 und CloudFront                                     | Statische Auslieferung; `/v1` wird über CloudFront an die API gereicht, daher kein CORS                                              |
+| Anmeldung     | Cognito, Managed Login, Authorization Code mit PKCE                            | Zugangsdaten berühren unseren Code nie; Zwei-Faktor ist Pflicht                                                                      |
+| Infrastruktur | CDK (TypeScript)                                                               | Eine Umgebung entsteht mit einem Befehl                                                                                              |
 
 ## Daten
 
@@ -122,16 +122,19 @@ alle 1,5 Sekunden nachgeladen.
 
 ## Kosten (Schätzung, Frankfurt)
 
-| Posten                                                                                 | Monatlich                                 |
-| -------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Lambda, API Gateway, DynamoDB, CloudFront, Cognito (Grundlast)                         | wenige USD                                |
-| KMS-Schlüssel, Secret                                                                  | ca. 1,40 USD                              |
-| WAF (optional)                                                                         | ca. 9 USD                                 |
-| Sprachagent: Fargate 0,5 vCPU/1 GB ARM, Load Balancer, öffentliche Adressen (optional) | ca. 45 USD                                |
-| Nova Sonic je Gesprächsminute                                                          | ca. 2 ct (Schätzung aus den Tokenpreisen) |
+| Posten                                                                    | Monatlich                                 |
+| ------------------------------------------------------------------------- | ----------------------------------------- |
+| Lambda, API Gateway, DynamoDB, CloudFront, Cognito (Grundlast)            | wenige USD                                |
+| KMS-Schlüssel, Secret                                                     | ca. 1,40 USD                              |
+| WAF (optional)                                                            | ca. 9 USD                                 |
+| Sprachagent: Fargate 0,5 vCPU/1 GB ARM, privater Load Balancer (optional) | ca. 40 USD                                |
+| Nova Sonic je Gesprächsminute                                             | ca. 2 ct (Schätzung aus den Tokenpreisen) |
 
 Der Load Balancer ist gegenüber dem ersten Entwurf hinzugekommen: Der Browser baut die
-WebSocket-Verbindung nur über TLS auf, und Fargate-Tasks haben keine feste Adresse.
+WebSocket-Verbindung nur über TLS auf, und Fargate-Tasks haben keine feste Adresse. Er liegt in
+privaten Subnetzen und ist nur über CloudFront erreichbar (CloudFront VPC Origin). So kommen
+Weboberfläche, API und Testanruf unter einer Adresse an, mit dem Zertifikat von CloudFront, und
+eine eigene Domain ist für nichts nötig.
 
 ## Bewusst nicht gewählt
 
@@ -168,7 +171,7 @@ Ein Anruf auf die Praxisnummer läuft so:
 6. **Notfall:** Der Agent sagt den Satz mit der 112 vollständig an und legt dann auf.
 
 Der Sprachagent hat keine feste Adresse. Jeder Container trägt beim Start seine öffentliche
-Adresse unter `sip.<domain>` ein; dorthin schickt der Voice Connector die Anrufe. SIP und RTP
+Adresse als Ziel des Voice Connectors ein; dafür braucht es keine Domain. SIP und RTP
 sind in der Firewall nur für den Adressbereich der Voice Connectoren in Frankfurt offen.
 
 Zwischen Voice Connector und Agent laufen SIP und RTP unverschlüsselt, aber nur innerhalb des

@@ -21,8 +21,7 @@ wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fe
     "hostedZoneId": "Z0123456789ABCDEFGHIJ",
     "zoneName": "praxis-muster.de",
     "appHost": "app.praxis-muster.de",
-    "apiHost": "api.praxis-muster.de",
-    "voiceHost": "voice.praxis-muster.de"
+    "apiHost": "api.praxis-muster.de"
   },
   "devOrigins": [],
   "waf": true,
@@ -31,17 +30,17 @@ wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fe
 }
 ```
 
-| Feld         | Bedeutung                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `stage`      | Name der Umgebung; Teil aller Stack- und Ressourcennamen.                                                                       |
-| `account`    | AWS-Konto; ohne Angabe das Konto der aktuellen Zugangsdaten.                                                                    |
-| `region`     | Region der Daten. Frankfurt (`eu-central-1`) ist vorgesehen.                                                                    |
-| `production` | Schützt Tabellen und Benutzerkonten gegen Löschen und behält sie, wenn ein Stack entfernt wird.                                 |
-| `practice`   | Die Praxis, die beim ersten Ausrollen angelegt wird, und das erste Administrationskonto (Einladung per E-Mail).                 |
-| `domain`     | Eigene Domain in Route 53. Ohne sie läuft die Weboberfläche unter einer CloudFront-Adresse.                                     |
-| `devOrigins` | Weitere Adressen, die sich anmelden und die API aufrufen dürfen, z. B. `http://localhost:5173`.                                 |
-| `waf`        | AWS WAF vor der API (ca. 9 USD im Monat).                                                                                       |
-| `voice`      | Sprachagent für Testmodus und Telefon (ca. 45 USD im Monat). Braucht `domain`, weil der Browser Sprache nur über TLS überträgt. |
+| Feld         | Bedeutung                                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stage`      | Name der Umgebung; Teil aller Stack- und Ressourcennamen.                                                                                                                                   |
+| `account`    | AWS-Konto; ohne Angabe das Konto der aktuellen Zugangsdaten.                                                                                                                                |
+| `region`     | Region der Daten. Frankfurt (`eu-central-1`) ist vorgesehen.                                                                                                                                |
+| `production` | Schützt Tabellen und Benutzerkonten gegen Löschen und behält sie, wenn ein Stack entfernt wird.                                                                                             |
+| `practice`   | Die Praxis, die beim ersten Ausrollen angelegt wird, und das erste Administrationskonto (Einladung per E-Mail).                                                                             |
+| `domain`     | Optional. Eigene Domain in Route 53 für eine schönere Adresse. Ohne sie läuft alles unter der kostenlosen CloudFront-Adresse (`https://<id>.cloudfront.net`), auch Testanruf und Telefonie. |
+| `devOrigins` | Weitere Adressen, die sich anmelden und die API aufrufen dürfen, z. B. `http://localhost:5173`.                                                                                             |
+| `waf`        | AWS WAF vor der API (ca. 9 USD im Monat).                                                                                                                                                   |
+| `voice`      | Sprachagent für Testanruf und Telefon (ca. 40 USD im Monat). Braucht keine Domain.                                                                                                          |
 
 ## Ausrollen
 
@@ -52,7 +51,31 @@ npm run deploy
 ```
 
 `npm run deploy` baut die Weboberfläche und rollt alle Stacks aus. Für den Sprachagenten muss
-Docker laufen, weil das Container-Image beim Ausrollen gebaut wird.
+Docker laufen, weil das Container-Image beim Ausrollen gebaut wird. Das erste Ausrollen mit
+Sprachagent dauert etwas länger, weil CloudFront die Verbindung zum privaten Load Balancer
+einrichtet (bis zu 15 Minuten).
+
+## Ohne eigene Domain
+
+Die kleinste Konfiguration, mit der alles läuft (Weboberfläche, Testanruf mit Sprache und, sobald
+die Nummer da ist, Telefonie):
+
+```json
+{
+  "stage": "dev",
+  "region": "eu-central-1",
+  "practice": {
+    "name": "Hausarztpraxis Muster",
+    "federalState": "NW",
+    "adminEmail": "praxis@example.de",
+    "adminName": "Praxisleitung"
+  },
+  "devOrigins": [],
+  "voice": true
+}
+```
+
+Die Adresse der Weboberfläche steht nach dem Ausrollen in der Ausgabe `AppUrl` des Web-Stacks.
 
 ## Nova Sonic freischalten
 
