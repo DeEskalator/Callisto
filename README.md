@@ -5,7 +5,9 @@ um; der Assistent nimmt Termine und Rezeptwünsche auf, verbindet bei sonstigen 
 Praxis, erkennt Notfälle und kennt Sprechzeiten und Urlaub. Das Praxisteam sieht alle Anrufe in
 einer Weboberfläche und konfiguriert dort den Assistenten.
 
-Architektur und Entscheidungen: [docs/architektur.md](docs/architektur.md).
+- **Ausrollen in wenigen Schritten:** [docs/quickstart.md](docs/quickstart.md)
+- Konfiguration und Telefonie: [docs/konfiguration.md](docs/konfiguration.md)
+- Architektur und Entscheidungen: [docs/architektur.md](docs/architektur.md)
 
 ## Aufbau
 
@@ -42,7 +44,7 @@ Antworten braucht es `CALLISTO_MODEL=nova`, denn das Skript versteht keine Sprac
 
 ## Ausrollen auf AWS
 
-Siehe [docs/konfiguration.md](docs/konfiguration.md).
+Schritt für Schritt: [docs/quickstart.md](docs/quickstart.md).
 
 ```sh
 npm run synth        # Weboberfläche bauen, CloudFormation-Vorlagen erzeugen
