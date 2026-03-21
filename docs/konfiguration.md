@@ -1,8 +1,6 @@
 # Konfiguration einer Umgebung
 
-Eine Umgebung (z. B. `dev` oder `prod`) wird durch `infra/config.json` beschrieben. Die Datei
-wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fehlt, wird
-`infra/config.example.json` verwendet.
+Eine Umgebung (z. B. `dev` oder `prod`) wird durch `infra/config.json` beschrieben. Die Datei wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fehlt, wird `infra/config.example.json` verwendet.
 
 ```json
 {
@@ -59,18 +57,13 @@ Für sie legt er zweierlei fest:
 | Löschschutz bei AWS                           | aus                                                                                                                            | an: Tabellen und Benutzerpool lassen sich auch in der Konsole oder per API nicht löschen, bis der Schutz bewusst abgeschaltet wird. Für den Schlüssel gibt es keinen solchen Schalter. |
 | Änderung, die eine Tabelle neu anlegen müsste | Die alte Tabelle wird gelöscht.                                                                                                | Die alte Tabelle bleibt mit ihren Daten stehen.                                                                                                                                        |
 
-Was er nicht beeinflusst: Kosten, Leistung, Sicherheit (Anmeldung, Zwei-Faktor und
-Verschlüsselung sind in beiden Fällen gleich) und das Verhalten der Anwendung. Die
-Point-in-Time-Sicherungen der Tabellen sind immer eingeschaltet; sie werden aber mit der Tabelle
-gelöscht. Weboberfläche, API, Sprachagent und Logs werden beim Abbauen immer entfernt.
+Was er nicht beeinflusst: Kosten, Leistung, Sicherheit (Anmeldung, Zwei-Faktor und Verschlüsselung sind in beiden Fällen gleich) und das Verhalten der Anwendung. Die Point-in-Time-Sicherungen der Tabellen sind immer eingeschaltet; sie werden aber mit der Tabelle gelöscht. Weboberfläche, API, Sprachagent und Logs werden beim Abbauen immer entfernt.
 
 **Wann was:**
 
 - `false` für Umgebungen zum Ausprobieren, die rückstandslos wieder verschwinden sollen.
 - `true`, sobald die Praxis mit der Umgebung arbeitet.
-- Umstellen geht jederzeit mit einem erneuten `npm run deploy`, ohne dass Daten verloren gehen.
-  Soll eine `true`-Umgebung endgültig abgebaut werden, zuerst auf `false` stellen und einmal
-  ausrollen; erst dann ist der Löschschutz aufgehoben.
+- Umstellen geht jederzeit mit einem erneuten `npm run deploy`, ohne dass Daten verloren gehen. Soll eine `true`-Umgebung endgültig abgebaut werden, zuerst auf `false` stellen und einmal ausrollen; erst dann ist der Löschschutz aufgehoben.
 
 ## Ausrollen
 
@@ -80,15 +73,11 @@ npx cdk bootstrap aws://<konto>/us-east-1 # zusätzlich, wenn eine Domain verwen
 npm run deploy
 ```
 
-`npm run deploy` baut die Weboberfläche und rollt alle Stacks aus. Für den Sprachagenten muss
-Docker laufen, weil das Container-Image beim Ausrollen gebaut wird. Das erste Ausrollen mit
-Sprachagent dauert etwas länger, weil CloudFront die Verbindung zum privaten Load Balancer
-einrichtet (bis zu 15 Minuten).
+`npm run deploy` baut die Weboberfläche und rollt alle Stacks aus. Für den Sprachagenten muss Docker laufen, weil das Container-Image beim Ausrollen gebaut wird. Das erste Ausrollen mit Sprachagent dauert etwas länger, weil CloudFront die Verbindung zum privaten Load Balancer einrichtet (bis zu 15 Minuten).
 
 ## Ohne eigene Domain
 
-Die kleinste Konfiguration, mit der alles läuft (Weboberfläche, Testanruf mit Sprache und, sobald
-die Nummer da ist, Telefonie):
+Die kleinste Konfiguration, mit der alles läuft (Weboberfläche, Testanruf mit Sprache und, sobald die Nummer da ist, Telefonie):
 
 ```json
 {
@@ -109,25 +98,13 @@ Die Adresse der Weboberfläche steht nach dem Ausrollen in der Ausgabe `AppUrl` 
 
 ## Nova Sonic freischalten
 
-Der Sprachagent ruft Amazon Nova 2 Sonic in Stockholm (`eu-north-1`) auf, der einzigen
-EU-Region des Modells. Der Modellzugriff muss dort einmalig in der Bedrock-Konsole aktiviert
-werden.
+Der Sprachagent ruft Amazon Nova 2 Sonic in Stockholm (`eu-north-1`) auf, der einzigen EU-Region des Modells. Der Modellzugriff muss dort einmalig in der Bedrock-Konsole aktiviert werden.
 
 ## Telefonie einschalten
 
-1. **Rufnummer bestellen:** In der Amazon-Chime-SDK-Konsole (Telefonnummernverwaltung) oder
-   über den AWS-Support eine deutsche Ortsnummer mit dem Produkttyp „SIP media application
-   dial-in“ anfordern. Dafür werden Gewerbenachweis und eine Adresse im Vorwahlbereich verlangt;
-   die Bereitstellung dauert mehrere Wochen. Alternativ lässt sich eine bestehende Nummer
-   portieren.
-2. **Zweite Nummer eintragen:** In der Weboberfläche unter Einstellungen → Praxis →
-   „Weiterleitung an“ die Nummer eintragen, zu der der Assistent verbindet. Sie darf nicht auf den
-   Assistenten umgeleitet sein.
-3. **Konfiguration ergänzen:** `"telephony": { "phoneNumber": "+49…" }` in `infra/config.json`
-   und `npm run deploy`.
-4. **Umleiten:** Die Telefonanlage der Praxis auf die neue Nummer umleiten (immer oder nur bei
-   Nichtannahme, je nach Wunsch).
+1. **Rufnummer bestellen:** In der Amazon-Chime-SDK-Konsole (Telefonnummernverwaltung) oder über den AWS-Support eine deutsche Ortsnummer mit dem Produkttyp „SIP media application dial-in“ anfordern. Dafür werden Gewerbenachweis und eine Adresse im Vorwahlbereich verlangt; die Bereitstellung dauert mehrere Wochen. Alternativ lässt sich eine bestehende Nummer portieren.
+2. **Zweite Nummer eintragen:** In der Weboberfläche unter Einstellungen → Praxis → „Weiterleitung an“ die Nummer eintragen, zu der der Assistent verbindet. Sie darf nicht auf den Assistenten umgeleitet sein.
+3. **Konfiguration ergänzen:** `"telephony": { "phoneNumber": "+49…" }` in `infra/config.json` und `npm run deploy`.
+4. **Umleiten:** Die Telefonanlage der Praxis auf die neue Nummer umleiten (immer oder nur bei Nichtannahme, je nach Wunsch).
 
-Ein Anruf kostet zusätzlich zu Nova Sonic wenige Cent pro Minute für Rufnummer, SIP Media
-Application und Voice Connector; verbunden zur Praxis kommt die Verbindung ins deutsche Festnetz
-hinzu.
+Ein Anruf kostet zusätzlich zu Nova Sonic wenige Cent pro Minute für Rufnummer, SIP Media Application und Voice Connector; verbunden zur Praxis kommt die Verbindung ins deutsche Festnetz hinzu.
