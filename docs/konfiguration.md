@@ -30,17 +30,47 @@ wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fe
 }
 ```
 
-| Feld         | Bedeutung                                                                                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `stage`      | Name der Umgebung; Teil aller Stack- und Ressourcennamen.                                                                                                                                   |
-| `account`    | AWS-Konto; ohne Angabe das Konto der aktuellen Zugangsdaten.                                                                                                                                |
-| `region`     | Region der Daten. Frankfurt (`eu-central-1`) ist vorgesehen.                                                                                                                                |
-| `production` | Schützt Tabellen und Benutzerkonten gegen Löschen und behält sie, wenn ein Stack entfernt wird.                                                                                             |
-| `practice`   | Die Praxis, die beim ersten Ausrollen angelegt wird, und das erste Administrationskonto (Einladung per E-Mail).                                                                             |
-| `domain`     | Optional. Eigene Domain in Route 53 für eine schönere Adresse. Ohne sie läuft alles unter der kostenlosen CloudFront-Adresse (`https://<id>.cloudfront.net`), auch Testanruf und Telefonie. |
-| `devOrigins` | Weitere Adressen, die sich anmelden und die API aufrufen dürfen, z. B. `http://localhost:5173`.                                                                                             |
-| `waf`        | AWS WAF vor der API (ca. 9 USD im Monat).                                                                                                                                                   |
-| `voice`      | Sprachagent für Testanruf und Telefon (ca. 40 USD im Monat). Braucht keine Domain.                                                                                                          |
+| Feld         | Bedeutung                                                                                                                                                                                                             |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stage`      | Name der Umgebung; Teil aller Stack- und Ressourcennamen.                                                                                                                                                             |
+| `account`    | AWS-Konto; ohne Angabe das Konto der aktuellen Zugangsdaten.                                                                                                                                                          |
+| `region`     | Region der Daten. Frankfurt (`eu-central-1`) ist vorgesehen.                                                                                                                                                          |
+| `production` | Ob Daten und Benutzerkonten beim Abbauen und durch Versehen gelöscht werden können. `false`: werden mit gelöscht. `true`: bleiben erhalten und sind gegen Löschen geschützt. Siehe [unten](#der-schalter-production). |
+| `practice`   | Die Praxis, die beim ersten Ausrollen angelegt wird, und das erste Administrationskonto (Einladung per E-Mail).                                                                                                       |
+| `domain`     | Optional. Eigene Domain in Route 53 für eine schönere Adresse. Ohne sie läuft alles unter der kostenlosen CloudFront-Adresse (`https://<id>.cloudfront.net`), auch Testanruf und Telefonie.                           |
+| `devOrigins` | Weitere Adressen, die sich anmelden und die API aufrufen dürfen, z. B. `http://localhost:5173`.                                                                                                                       |
+| `waf`        | AWS WAF vor der API (ca. 9 USD im Monat).                                                                                                                                                                             |
+| `voice`      | Sprachagent für Testanruf und Telefon (ca. 40 USD im Monat). Braucht keine Domain.                                                                                                                                    |
+
+## Der Schalter `production`
+
+Der Schalter betrifft genau vier Ressourcen, die die Daten der Praxis halten:
+
+- die Planungstabelle (Einstellungen, Sprechzeiten, Termine, Benutzerprofile, Protokoll),
+- die Anruftabelle (Anrufe, Transkripte, Anliegen),
+- den KMS-Schlüssel, mit dem die Anruftabelle verschlüsselt ist,
+- den Benutzerpool in Cognito (die Anmeldekonten).
+
+Für sie legt er zweierlei fest:
+
+|                                               | `"production": false`                                                                                                          | `"production": true`                                                                                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beim Abbauen (`cdk destroy`)                  | Die vier werden gelöscht, mit allen Daten und Konten. Der Schlüssel wird nach einer Wartezeit von 30 Tagen endgültig gelöscht. | Sie bleiben bestehen; nur alles andere wird abgebaut. Daten und Konten sind danach noch da und verursachen weiter Kosten (z. B. 1 USD im Monat für den Schlüssel).                     |
+| Löschschutz bei AWS                           | aus                                                                                                                            | an: Tabellen und Benutzerpool lassen sich auch in der Konsole oder per API nicht löschen, bis der Schutz bewusst abgeschaltet wird. Für den Schlüssel gibt es keinen solchen Schalter. |
+| Änderung, die eine Tabelle neu anlegen müsste | Die alte Tabelle wird gelöscht.                                                                                                | Die alte Tabelle bleibt mit ihren Daten stehen.                                                                                                                                        |
+
+Was er nicht beeinflusst: Kosten, Leistung, Sicherheit (Anmeldung, Zwei-Faktor und
+Verschlüsselung sind in beiden Fällen gleich) und das Verhalten der Anwendung. Die
+Point-in-Time-Sicherungen der Tabellen sind immer eingeschaltet; sie werden aber mit der Tabelle
+gelöscht. Weboberfläche, API, Sprachagent und Logs werden beim Abbauen immer entfernt.
+
+**Wann was:**
+
+- `false` für Umgebungen zum Ausprobieren, die rückstandslos wieder verschwinden sollen.
+- `true`, sobald die Praxis mit der Umgebung arbeitet.
+- Umstellen geht jederzeit mit einem erneuten `npm run deploy`, ohne dass Daten verloren gehen.
+  Soll eine `true`-Umgebung endgültig abgebaut werden, zuerst auf `false` stellen und einmal
+  ausrollen; erst dann ist der Löschschutz aufgehoben.
 
 ## Ausrollen
 

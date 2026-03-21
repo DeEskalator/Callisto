@@ -47,8 +47,11 @@ npm install
 - `adminEmail`: Hierhin geht die Einladung für das erste Administrationskonto.
 - `voice`: `true` für Testanruf mit Sprache (und später Telefon), ca. 40 USD im Monat. Mit
   `false` fallen nur wenige Dollar im Monat an, aber es gibt keinen Testanruf.
-- `production`: `true` schützt Daten und Benutzerkonten gegen versehentliches Löschen. Für den
-  ersten Versuch `false`, dann lässt sich alles rückstandslos entfernen.
+- `production`: Ob Daten und Benutzerkonten beim Abbauen mit gelöscht werden. `false`: Beim
+  Abbauen verschwindet alles, auch die Daten; richtig zum Ausprobieren. `true`: Tabellen,
+  Schlüssel und Benutzerkonten bleiben beim Abbauen erhalten und sind gegen Löschen geschützt;
+  richtig, sobald die Praxis damit arbeitet. Auf Kosten, Sicherheit und Verhalten der Anwendung
+  hat der Schalter keinen Einfluss. Genaueres: [konfiguration.md](konfiguration.md#der-schalter-production).
 
 Alle Felder: [konfiguration.md](konfiguration.md).
 
