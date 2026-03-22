@@ -178,28 +178,34 @@ export class ConversationSession {
         void session.saveCall();
       },
     };
-    session.model = await deps.model.start(
-      {
-        systemPrompt: buildSystemPrompt(practice, state, { ...preset, capabilities }),
-        tools: toolSpecs(capabilities),
-        spokenSoFar: announcement,
-        audio: session.audio,
-        sampleRate: session.sampleRate,
-      },
-      {
-        onCallerText: (text) => session.callerSaid(text),
-        onAssistantText: (text) => session.record('assistant', text),
-        onAudio: (pcm) => link.audio(pcm),
-        onInterrupted: () => link.clearAudio(),
-        onToolUse: (use) => void session.runTool(use, tools),
-        onClosed: (error) => {
-          if (error) {
-            session.report('The model ended the conversation with an error', error);
-          }
-          void session.finish(error ? 'failed' : 'completed');
+    try {
+      session.model = await deps.model.start(
+        {
+          systemPrompt: buildSystemPrompt(practice, state, { ...preset, capabilities }),
+          tools: toolSpecs(capabilities),
+          spokenSoFar: announcement,
+          audio: session.audio,
+          sampleRate: session.sampleRate,
         },
-      },
-    );
+        {
+          onCallerText: (text) => session.callerSaid(text),
+          onAssistantText: (text) => session.record('assistant', text),
+          onAudio: (pcm) => link.audio(pcm),
+          onInterrupted: () => link.clearAudio(),
+          onToolUse: (use) => void session.runTool(use, tools),
+          onClosed: (error) => {
+            if (error) {
+              session.report('The model ended the conversation with an error', error);
+            }
+            void session.finish(error ? 'failed' : 'completed');
+          },
+        },
+      );
+    } catch (error) {
+      // The call is already on record and the caller has heard the greeting: close both.
+      await session.finish('failed');
+      throw error;
+    }
     return session;
   }
 

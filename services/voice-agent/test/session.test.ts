@@ -225,6 +225,37 @@ describe('a conversation', () => {
   });
 });
 
+describe('a model that cannot be reached', () => {
+  it('closes the call as failed and tells the caller', async () => {
+    const calls = new MemoryCallStore();
+    let ended: EndReason | undefined;
+    const start = ConversationSession.start(
+      { practiceId: PRACTICE, channel: 'test_text' },
+      {
+        config: MemoryConfigStore.withPractice(PRACTICE, 'Praxis Test', 'NW'),
+        calls,
+        slots: new MemorySlotStore(),
+        model: { start: () => Promise.reject(new Error('AccessDeniedException')) },
+        emergency: new KeywordEmergencyMonitor(),
+        now: () => MONDAY_MORNING,
+      },
+      {
+        transcript: () => {},
+        audio: () => {},
+        clearAudio: () => {},
+        ended: (reason) => {
+          ended = reason;
+        },
+      },
+    );
+    await expect(start).rejects.toThrow('AccessDeniedException');
+    expect(ended).toBe('failed');
+    expect([...calls.calls.values()]).toMatchObject([
+      { status: 'failed', endedAt: expect.any(String) },
+    ]);
+  });
+});
+
 describe('the emergency monitor', () => {
   const monitor = new KeywordEmergencyMonitor();
 
