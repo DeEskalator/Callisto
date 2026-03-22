@@ -128,7 +128,8 @@ export class VoiceStack extends Stack {
     data.ticketSecret.grantRead(taskRole);
     taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
-        actions: ['bedrock:InvokeModelWithBidirectionalStream'],
+        // The bidirectional stream has no IAM action of its own; it is authorised as InvokeModel.
+        actions: ['bedrock:InvokeModel'],
         resources: [
           `arn:${this.partition}:bedrock:${BEDROCK_REGION}::foundation-model/${NOVA_SONIC_MODEL_ID}`,
         ],

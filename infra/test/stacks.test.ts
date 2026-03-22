@@ -276,7 +276,7 @@ describe('voice stack', () => {
   it('may call exactly Nova Sonic in Stockholm', () => {
     const { voice } = synth({ voice: true });
     const policies = JSON.stringify(voice?.findResources('AWS::IAM::Policy'));
-    expect(policies).toContain('bedrock:InvokeModelWithBidirectionalStream');
+    expect(policies).toContain('"bedrock:InvokeModel"');
     expect(policies).toContain('bedrock:eu-north-1::foundation-model/amazon.nova-2-sonic-v1:0');
   });
 
