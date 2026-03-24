@@ -18,8 +18,6 @@ export interface ToolUse {
 export interface ModelConfig {
   systemPrompt: string;
   tools: ToolSpec[];
-  /** What the assistant has already said before the model takes over (the greeting). */
-  spokenSoFar: string;
   /** Whether the caller speaks (audio in and out) or types (text only). */
   audio: boolean;
   /** Sample rate of the audio in both directions: 8 kHz on the phone, 16 kHz in the browser. */

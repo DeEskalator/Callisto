@@ -142,11 +142,9 @@ export class NovaSonicModel implements ConversationModel {
         },
       },
     });
+    // The greeting the caller has already heard is part of the system prompt, not of the chat
+    // history: Nova Sonic rejects a history that starts with the assistant.
     sendText('SYSTEM', config.systemPrompt, false);
-    if (config.spokenSoFar) {
-      // Conversation history: the model knows the caller has already heard the greeting.
-      sendText('ASSISTANT', config.spokenSoFar, false);
-    }
     // The audio content stays open for the whole conversation, also when the caller types:
     // typed text is "cross-modal input" into a voice session.
     queue.push({

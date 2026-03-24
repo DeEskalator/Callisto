@@ -183,7 +183,6 @@ export class ConversationSession {
         {
           systemPrompt: buildSystemPrompt(practice, state, { ...preset, capabilities }),
           tools: toolSpecs(capabilities),
-          spokenSoFar: announcement,
           audio: session.audio,
           sampleRate: session.sampleRate,
         },

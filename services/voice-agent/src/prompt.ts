@@ -123,7 +123,7 @@ export function buildSystemPrompt(
 
 # Lage
 ${openingFacts(state)}
-Die Begrüßung${preset.announcement ? ' und die Ansage zur Erreichbarkeit' : ''} hat der Anrufer bereits gehört; wiederhole sie nicht. Frage als Erstes, wie du helfen kannst, falls der Anrufer sein Anliegen noch nicht genannt hat.
+Der Anrufer hat zu Beginn bereits diese Ansage gehört: „${openingAnnouncement(practice, preset)}“ Wiederhole sie nicht. Frage als Erstes, wie du helfen kannst, falls der Anrufer sein Anliegen noch nicht genannt hat.
 
 # Sprechzeiten
 ${weeklyHours(practice)}
