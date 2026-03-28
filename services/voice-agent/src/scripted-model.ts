@@ -81,7 +81,6 @@ export class ScriptedModel implements ConversationModel {
     const handle = (text: string) => {
       const lower = text.toLowerCase();
       if (/tschüss|wiederhören|wiedersehen|das war alles|nein danke|das wars/.test(lower)) {
-        say('Gern geschehen. Auf Wiederhören!');
         return call('gespraech_beenden', {});
       }
       switch (step) {

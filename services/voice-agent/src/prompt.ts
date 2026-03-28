@@ -33,6 +33,8 @@ export const EMERGENCY_ANNOUNCEMENT =
 
 export const TRANSFER_ANNOUNCEMENT = 'Einen Moment bitte, ich verbinde Sie mit der Praxis.';
 
+export const FAREWELL_ANNOUNCEMENT = 'Vielen Dank für Ihren Anruf. Auf Wiederhören!';
+
 function openingFacts(state: OpeningState): string {
   const lines: string[] = [
     `Heute ist ${germanDate(state.localDate)}, es ist ${state.localTime} Uhr.`,
@@ -151,5 +153,5 @@ ${
 - Namen und Geburtsdatum: Wiederhole sie zur Kontrolle. Lass dir ungewöhnliche Namen buchstabieren. Gib das Geburtsdatum an Werkzeuge im Format JJJJ-MM-TT.
 - Sprich in kurzen Sätzen, stelle immer nur eine Frage, und lies keine Kennungen oder Listenzeichen vor. Uhrzeiten und Daten sprichst du natürlich aus, zum Beispiel „Dienstag, der siebzehnte November um halb neun“.
 - Wenn du etwas nicht verstanden hast, frage nach, statt zu raten.
-- Verabschiedet sich der Anrufer, verabschiede dich kurz und rufe gespraech_beenden auf.`;
+- Verabschiedet sich der Anrufer, rufe gespraech_beenden auf, ohne selbst etwas zu sagen. Die Verabschiedung wird dann automatisch gesprochen.`;
 }

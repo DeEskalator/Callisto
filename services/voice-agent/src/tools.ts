@@ -171,7 +171,8 @@ export function toolSpecs(capabilities: PresetCapabilities): ToolSpec[] {
     },
     {
       name: 'gespraech_beenden',
-      description: 'Beendet das Gespräch, nachdem sich der Anrufer verabschiedet hat.',
+      description:
+        'Beendet das Gespräch, nachdem sich der Anrufer verabschiedet hat. Spricht selbst die Verabschiedung; sage vorher nichts.',
       inputSchema: object({}, []),
     },
   );

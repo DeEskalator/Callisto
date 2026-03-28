@@ -197,6 +197,12 @@ describe('a conversation', () => {
       expect(ctx.call()).toMatchObject({ status: 'completed', endedAt: expect.any(String) });
     });
 
+    it('says the fixed farewell when the caller says goodbye', async () => {
+      ctx.session.receiveText('Danke, das war alles');
+      expect(await ctx.untilEnded()).toBe('completed');
+      expect(ctx.lines.at(-1)?.text).toBe('Vielen Dank für Ihren Anruf. Auf Wiederhören!');
+    });
+
     it('marks a call without a word from the caller as abandoned', async () => {
       await ctx.session.hangUp();
       expect(ctx.call()?.status).toBe('abandoned');

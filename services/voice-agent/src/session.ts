@@ -20,6 +20,7 @@ import type { ConversationModel, ModelSession, SampleRate, ToolUse } from './mod
 import {
   buildSystemPrompt,
   EMERGENCY_ANNOUNCEMENT,
+  FAREWELL_ANNOUNCEMENT,
   openingAnnouncement,
   TRANSFER_ANNOUNCEMENT,
 } from './prompt';
@@ -255,6 +256,8 @@ export class ConversationSession {
           await this.say(TRANSFER_ANNOUNCEMENT);
           return await this.finish('transferred');
         case 'hangup':
+          // The model's own goodbye would be cut off by closing it, so the farewell is fixed.
+          await this.say(FAREWELL_ANNOUNCEMENT);
           return await this.finish('completed');
         default:
           this.model?.sendToolResult(use.id, outcome.result);
