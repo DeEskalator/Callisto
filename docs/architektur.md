@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: März 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
+Stand: April 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
 
 ## Grundidee
 
@@ -100,14 +100,14 @@ Der Load Balancer ist gegenüber dem ersten Entwurf hinzugekommen: Der Browser b
 
 ## Stand
 
-| Teil                                                                                     | Stand                                                                                       |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Datenmodell, Anmeldung, API, Infrastruktur                                               | umgesetzt, lokal getestet, noch nicht ausgerollt                                            |
-| Einstellungen: Sprechzeiten, Schließzeiten, Ansagen, Kategorien, Slots, Benutzer, Rollen | umgesetzt                                                                                   |
-| Sprachagent mit Testmodus (Text und Sprache)                                             | umgesetzt; lokal mit einem Skript-Modell getestet, gegen Nova Sonic noch nicht              |
-| Tagesgeschehen: Anliegen, Anrufe, Transkripte                                            | umgesetzt                                                                                   |
-| Anliegen-Ereignisse für eine PVS-Anbindung                                               | umgesetzt (EventBridge), noch ohne Abnehmer                                                 |
-| Telefonie                                                                                | umgesetzt und mit einem simulierten Telefon getestet; gegen eine echte Rufnummer noch nicht |
+| Teil                                                                                     | Stand                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Datenmodell, Anmeldung, API, Infrastruktur                                               | umgesetzt und ausgerollt                    |
+| Einstellungen: Sprechzeiten, Schließzeiten, Ansagen, Kategorien, Slots, Benutzer, Rollen | umgesetzt                                   |
+| Sprachagent mit Testmodus (Text und Sprache)                                             | umgesetzt, mit Nova Sonic                   |
+| Tagesgeschehen: Anliegen, Anrufe, Transkripte                                            | umgesetzt                                   |
+| Anliegen-Ereignisse für eine PVS-Anbindung                                               | umgesetzt (EventBridge), noch ohne Abnehmer |
+| Telefonie                                                                                | umgesetzt                                   |
 
 ### Telefonie
 
