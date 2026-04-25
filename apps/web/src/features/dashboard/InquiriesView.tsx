@@ -18,6 +18,7 @@ import { ConfirmDialog, Modal } from '../../ui/Modal';
 import { QueryState } from '../../ui/QueryState';
 import { useNotify } from '../../ui/Toast';
 import {
+  DayNavigation,
   INQUIRY_TYPES,
   InquiryProperties,
   InquiryStatusPill,
@@ -27,10 +28,10 @@ import {
   Transcript,
 } from './shared';
 
-type Scope = 'open' | 'today' | 'tests';
+type Scope = 'open' | 'day' | 'tests';
 const SCOPES: Record<Scope, string> = {
   open: 'Offen',
-  today: 'Heute',
+  day: 'Tag',
   tests: 'Tests',
 };
 
@@ -46,14 +47,16 @@ export function InquiriesView() {
   const today = toZoned(new Date(), 'Europe/Berlin').date;
 
   const [scope, setScope] = useState<Scope>('open');
+  // The day shown under "Tag" and "Tests": open inquiries are listed regardless of the day.
+  const [date, setDate] = useState(today);
   const [type, setType] = useState<InquiryType | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string>();
   const [annotating, setAnnotating] = useState<Inquiry>();
   const [cancelling, setCancelling] = useState<Inquiry>();
 
   const open = useOpenInquiries();
-  const ofToday = useInquiriesOfDay(today);
-  const source = scope === 'open' ? open : ofToday;
+  const ofDay = useInquiriesOfDay(date);
+  const source = scope === 'open' ? open : ofDay;
 
   const update = useMutation({
     mutationFn: (change: { inquiry: Inquiry; status?: InquiryStatus; note?: string }) =>
@@ -185,6 +188,7 @@ export function InquiriesView() {
       status={`${count} ${count === 1 ? 'Anliegen' : 'Anliegen'}${scope === 'open' ? ' offen' : ''}`}
       toolbarEnd={
         <div className="toolbar__nav">
+          {scope !== 'open' && <DayNavigation date={date} today={today} onChange={setDate} />}
           <select
             className="select"
             aria-label="Art des Anliegens"
@@ -254,7 +258,10 @@ export function InquiriesView() {
                 title: 'Alles erledigt',
                 hint: 'Sobald ein Anrufer einen Termin bucht, ein Rezept bestellt oder um Rückruf bittet, erscheint das hier.',
               }
-            : { title: 'Keine Anliegen in dieser Auswahl' }
+            : {
+                title:
+                  date === today ? 'Heute noch keine Anliegen' : 'Keine Anliegen an diesem Tag',
+              }
         }
       />
 

@@ -1,5 +1,20 @@
-import type { Call, Inquiry, InquiryStatus, InquiryType, Patient } from '@callisto/domain';
-import { CalendarCheck, type LucideIcon, MessageSquareText, PhoneCall, Pill } from 'lucide-react';
+import {
+  addDays,
+  type Call,
+  type Inquiry,
+  type InquiryStatus,
+  type InquiryType,
+  type Patient,
+} from '@callisto/domain';
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+  MessageSquareText,
+  PhoneCall,
+  Pill,
+} from 'lucide-react';
 import { useCall } from '../../app/queries';
 import { formatDate, formatLongDate, formatPhone, formatTime } from '../../lib/format';
 
@@ -191,5 +206,41 @@ export function Transcript(props: { callId: string | undefined }) {
         <li className="transcript__note">Das Gespräch läuft noch …</li>
       )}
     </ol>
+  );
+}
+
+/** Steps through the days of the past, one at a time; the future holds no calls yet. */
+export function DayNavigation(props: {
+  date: string;
+  today: string;
+  onChange: (date: string) => void;
+}) {
+  const { date, today, onChange } = props;
+  return (
+    <>
+      <span className="toolbar__period">{formatLongDate(date)}</span>
+      <button
+        type="button"
+        className="btn btn--icon"
+        aria-label="Vorheriger Tag"
+        title="Vorheriger Tag"
+        onClick={() => onChange(addDays(date, -1))}
+      >
+        <ChevronLeft />
+      </button>
+      <button type="button" className="btn" onClick={() => onChange(today)}>
+        Heute
+      </button>
+      <button
+        type="button"
+        className="btn btn--icon"
+        aria-label="Nächster Tag"
+        title="Nächster Tag"
+        disabled={date >= today}
+        onClick={() => onChange(addDays(date, 1))}
+      >
+        <ChevronRight />
+      </button>
+    </>
   );
 }

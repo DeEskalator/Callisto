@@ -1,8 +1,7 @@
-import { addDays, type Call, toZoned } from '@callisto/domain';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { type Call, toZoned } from '@callisto/domain';
 import { useState } from 'react';
 import { useCall, useCallsOfDay } from '../../app/queries';
-import { formatDuration, formatLongDate, formatPhone, formatTime } from '../../lib/format';
+import { formatDuration, formatPhone, formatTime } from '../../lib/format';
 import { refreshCommand } from '../../shell/commands';
 import { ViewFrame } from '../../shell/ViewFrame';
 import { DataGrid, type GridColumn } from '../../ui/DataGrid';
@@ -11,6 +10,7 @@ import { QueryState } from '../../ui/QueryState';
 import {
   CallStatusPill,
   callStatusLabel,
+  DayNavigation,
   InquiryTypeLabel,
   inquirySubject,
   patientName,
@@ -81,29 +81,7 @@ export function CallsView() {
       toolbarEnd={
         <div className="toolbar__nav">
           <Checkbox label="Testanrufe zeigen" checked={showTests} onChange={setShowTests} />
-          <span className="toolbar__period">{formatLongDate(date)}</span>
-          <button
-            type="button"
-            className="btn btn--icon"
-            aria-label="Vorheriger Tag"
-            title="Vorheriger Tag"
-            onClick={() => setDate(addDays(date, -1))}
-          >
-            <ChevronLeft />
-          </button>
-          <button type="button" className="btn" onClick={() => setDate(today)}>
-            Heute
-          </button>
-          <button
-            type="button"
-            className="btn btn--icon"
-            aria-label="Nächster Tag"
-            title="Nächster Tag"
-            disabled={date >= today}
-            onClick={() => setDate(addDays(date, 1))}
-          >
-            <ChevronRight />
-          </button>
+          <DayNavigation date={date} today={today} onChange={setDate} />
         </div>
       }
       inspector={{
