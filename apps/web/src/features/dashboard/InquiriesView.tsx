@@ -111,7 +111,8 @@ export function InquiriesView() {
       id: 'in-progress',
       label: 'In Arbeit',
       icon: Hourglass,
-      disabled: !canManage || inquiry?.status !== 'new',
+      // Also back from "done", when it turns out something is still missing.
+      disabled: !canManage || (inquiry?.status !== 'new' && inquiry?.status !== 'done'),
       run: () => inquiry && update.mutate({ inquiry, status: 'in_progress' }),
     },
     {
