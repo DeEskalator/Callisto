@@ -469,6 +469,10 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* The selection of a grid row would swallow pills tinted in the same soft colours. */
+.grid__row[aria-selected="true"] .pill {
+  background: var(--surface);
+}
 
 .dot {
   display: inline-block;
