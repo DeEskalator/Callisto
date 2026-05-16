@@ -264,7 +264,8 @@
   display: flex;
   flex: none;
   align-items: center;
-  height: calc(var(--row-height) + 1px);
+  /* Same height as the column headers of the grid beside it, border included. */
+  height: var(--row-height);
   padding: 0 14px;
   border-bottom: 1px solid var(--border-strong);
   background: var(--surface-alt);
