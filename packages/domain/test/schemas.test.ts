@@ -52,6 +52,13 @@ describe('OpeningHoursSchema', () => {
     expect(OpeningHoursSchema.safeParse(hours).success).toBe(false);
   });
 
+  it('accepts only full and half hours', () => {
+    const at = (from: string, to: string) => ({ ...DEFAULT_OPENING_HOURS, mon: [{ from, to }] });
+    expect(OpeningHoursSchema.safeParse(at('07:30', '12:00')).success).toBe(true);
+    expect(OpeningHoursSchema.safeParse(at('07:45', '12:00')).success).toBe(false);
+    expect(OpeningHoursSchema.safeParse(at('08:00', '12:15')).success).toBe(false);
+  });
+
   it('requires every weekday', () => {
     const { sun: _sun, ...withoutSunday } = DEFAULT_OPENING_HOURS;
     expect(OpeningHoursSchema.safeParse(withoutSunday).success).toBe(false);

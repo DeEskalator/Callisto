@@ -12,10 +12,20 @@ import { isValidTimeZone } from './time';
 
 // ── Sprechzeiten ─────────────────────────────────────────────────────────────
 
+// The editor works in half hours, and so do practices; a finer value could not be shown there.
+const isHalfHour = (time: string) => time.endsWith(':00') || time.endsWith(':30');
+
 const DayRangesSchema = z
   .array(TimeRangeSchema)
-  .max(6)
+  .max(6, 'Höchstens sechs Zeiträume pro Tag')
   .superRefine((ranges, ctx) => {
+    if (ranges.some((range) => !isHalfHour(range.from) || !isHalfHour(range.to))) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sprechzeiten beginnen und enden zur vollen oder halben Stunde',
+        input: ranges,
+      });
+    }
     const sorted = [...ranges].sort((left, right) => left.from.localeCompare(right.from));
     for (let index = 1; index < sorted.length; index++) {
       const previous = sorted[index - 1];
