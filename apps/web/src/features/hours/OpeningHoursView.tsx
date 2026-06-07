@@ -2,13 +2,12 @@ import {
   germanHolidays,
   type OpeningHours,
   OpeningHoursSchema,
-  type TimeRange,
   toZoned,
-  WEEKDAYS,
   type Weekday,
 } from '@callisto/domain';
 import { Link } from '@tanstack/react-router';
-import { Plus, X } from 'lucide-react';
+import { Undo } from 'lucide-react';
+import { useState } from 'react';
 import { useApi } from '../../app/api';
 import { useConfig, useHasPermission, useInvalidatePlanning } from '../../app/queries';
 import { formatShortDay, WEEKDAY_NAMES } from '../../lib/format';
@@ -16,6 +15,7 @@ import { discardCommand, saveCommand } from '../../shell/commands';
 import { ViewFrame } from '../../shell/ViewFrame';
 import { QueryState } from '../../ui/QueryState';
 import { useEditablePage } from '../../ui/useEditablePage';
+import { HoursGrid, type Resolution } from './HoursGrid';
 
 /** The regular weekly opening hours of the practice. */
 export function OpeningHoursView() {
@@ -49,14 +49,27 @@ function OpeningHoursEditor(props: {
   });
   const hours = page.value;
 
-  const setDay = (weekday: Weekday, ranges: TimeRange[]) =>
-    page.replace({ ...hours, [weekday]: ranges });
-  const addRange = (weekday: Weekday) => {
-    // Continue after the last period of the day, or start with a usual morning.
-    const last = hours[weekday].at(-1);
-    const range = last ? { from: '15:00', to: '18:00' } : { from: '08:00', to: '12:00' };
-    setDay(weekday, [...hours[weekday], range]);
+  const [resolution, setResolution] = useState<Resolution>(1);
+  // Every drag is one step back; saving or discarding starts over.
+  const [history, setHistory] = useState<OpeningHours[]>([]);
+  const change = (next: OpeningHours) => {
+    setHistory([...history.slice(-49), hours]);
+    page.replace(next);
   };
+  const undo = () => {
+    const previous = history.at(-1);
+    if (previous) {
+      setHistory(history.slice(0, -1));
+      page.replace(previous);
+    }
+  };
+  const errors = [
+    ...new Set(
+      Object.entries(page.errors).map(
+        ([path, message]) => `${WEEKDAY_NAMES[path.split('.')[0] as Weekday] ?? ''}: ${message}`,
+      ),
+    ),
+  ];
 
   const today = toZoned(new Date(), props.settings.timeZone).date;
   const year = Number(today.slice(0, 4));
@@ -71,86 +84,49 @@ function OpeningHoursEditor(props: {
       padded
       status={page.dirty ? 'Ungespeicherte Änderungen' : undefined}
       commands={[
+        {
+          id: 'undo',
+          label: 'Rückgängig',
+          icon: Undo,
+          shortcut: { key: 'z', alt: true },
+          disabled: history.length === 0 || !page.dirty,
+          run: undo,
+        },
         saveCommand(page.save, !page.dirty || page.saving || !canManage),
-        discardCommand(page.discard, !page.dirty),
+        discardCommand(() => {
+          setHistory([]);
+          page.discard();
+        }, !page.dirty),
       ]}
+      toolbarEnd={
+        <div className="toolbar__nav">
+          <span className="toolbar__label">Raster</span>
+          {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own frame into the toolbar */}
+          <div className="segmented" role="group" aria-label="Raster">
+            <button type="button" aria-pressed={resolution === 1} onClick={() => setResolution(1)}>
+              30 Min.
+            </button>
+            <button type="button" aria-pressed={resolution === 2} onClick={() => setResolution(2)}>
+              1 Std.
+            </button>
+          </div>
+        </div>
+      }
     >
       <p className="view__intro">
         In diesen Zeiten ist die Praxis telefonisch erreichbar. Der Assistent verbindet nur dann mit
-        dem Praxisteam und sagt außerhalb dieser Zeiten die dafür hinterlegte Ansage an.
+        dem Praxisteam und sagt außerhalb dieser Zeiten die dafür hinterlegte Ansage an. Ziehen Sie
+        über das Raster, um Zeiten zu öffnen oder zu schließen.
       </p>
 
-      <fieldset className="hours" disabled={!canManage}>
-        {WEEKDAYS.map((weekday) => {
-          const ranges = hours[weekday];
-          const error = Object.entries(page.errors).find(([path]) => path.startsWith(weekday))?.[1];
-          return (
-            <div key={weekday} className="hours__day">
-              <div className="hours__name">{WEEKDAY_NAMES[weekday]}</div>
-              <div className="hours__ranges">
-                {ranges.length === 0 && <span className="hours__closed">Geschlossen</span>}
-                {ranges.map((range, index) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: periods have no identity besides their position
-                  <span key={index} className="hours__range">
-                    <input
-                      type="time"
-                      className="input input--tiny"
-                      aria-label={`${WEEKDAY_NAMES[weekday]}, Zeitraum ${index + 1}, von`}
-                      value={range.from}
-                      onChange={(event) =>
-                        setDay(
-                          weekday,
-                          ranges.map((each, at) =>
-                            at === index ? { ...each, from: event.target.value } : each,
-                          ),
-                        )
-                      }
-                    />
-                    –
-                    <input
-                      type="time"
-                      className="input input--tiny"
-                      aria-label={`${WEEKDAY_NAMES[weekday]}, Zeitraum ${index + 1}, bis`}
-                      value={range.to}
-                      onChange={(event) =>
-                        setDay(
-                          weekday,
-                          ranges.map((each, at) =>
-                            at === index ? { ...each, to: event.target.value } : each,
-                          ),
-                        )
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="btn btn--ghost btn--icon"
-                      aria-label={`${WEEKDAY_NAMES[weekday]}, Zeitraum ${index + 1} entfernen`}
-                      title="Zeitraum entfernen"
-                      onClick={() =>
-                        setDay(
-                          weekday,
-                          ranges.filter((_, at) => at !== index),
-                        )
-                      }
-                    >
-                      <X />
-                    </button>
-                  </span>
-                ))}
-                <button type="button" className="btn btn--ghost" onClick={() => addRange(weekday)}>
-                  <Plus />
-                  Zeitraum
-                </button>
-              </div>
-              {error && (
-                <div className="hours__error" role="alert">
-                  {error}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </fieldset>
+      <HoursGrid value={hours} onChange={change} resolution={resolution} disabled={!canManage} />
+      {errors.length > 0 && (
+        <div className="hours-grid__errors" role="alert">
+          {errors.map((error) => (
+            <div key={error}>{error}</div>
+          ))}
+        </div>
+      )}
 
       <section className="card hours__holidays">
         <h2 className="card__title">Feiertage</h2>
