@@ -1,4 +1,3 @@
-import { X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { NavTree } from './NavTree';
 import type { NavGroup } from './navigation';
@@ -33,7 +32,6 @@ export function SettingsSheet(props: {
         <header className="sheet__header">
           <span className="sheet__title">Einstellungen</span>
           <button type="button" className="btn" onClick={props.onClose}>
-            <X />
             Fertig
           </button>
         </header>
