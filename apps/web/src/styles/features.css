@@ -82,40 +82,20 @@
   user-select: none;
   touch-action: none;
 }
-.hours-grid__corner,
 .hours-grid__day {
-  margin: 0 6px 2px 0;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface-alt);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-.hours-grid__corner {
-  height: 28px;
-  font-weight: 500;
-}
-.hours-grid__day {
+  display: flex;
+  align-items: center;
   height: var(--row-height);
-  padding: 0 10px;
-  text-align: left;
-}
-.hours-grid__corner:hover:not(:disabled),
-.hours-grid__day:hover:not(:disabled) {
-  background: var(--hover);
+  margin-bottom: 2px;
+  padding-right: 12px;
+  color: var(--text);
 }
 .hours-grid__hour {
   position: relative;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  height: 24px;
   color: var(--text-muted);
-  font: inherit;
   font-size: var(--font-size-small);
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
 }
 .hours-grid__hour span {
   position: absolute;
@@ -131,14 +111,6 @@
   width: 1px;
   height: 5px;
   background: var(--border-strong);
-}
-.hours-grid__hour:hover:not(:disabled) {
-  color: var(--accent);
-}
-.hours-grid__corner:disabled,
-.hours-grid__day:disabled,
-.hours-grid__hour:disabled {
-  cursor: default;
 }
 .hours-grid__cell {
   height: var(--row-height);

@@ -69,7 +69,7 @@ function visibleSlots(week: Week): [number, number] {
 /**
  * Opening hours as a week grid, like the logon hours in Windows: drag across days and times to
  * open or close them. A drag that starts on a closed cell opens, one that starts on an open cell
- * closes. Clicking a weekday or an hour switches it as a whole.
+ * closes.
  */
 export function HoursGrid(props: {
   value: OpeningHours;
@@ -100,10 +100,6 @@ export function HoursGrid(props: {
       days.includes(index) ? day.map((slot, at) => (at >= from && at < to ? open : slot)) : day,
     );
     props.onChange(toHours(next));
-  };
-  const toggle = (days: number[], from: number, to: number) => {
-    const allOpen = days.every((day) => (week[day] ?? []).slice(from, to).every(Boolean));
-    set(days, from, to, !allOpen);
   };
   const allDays = WEEKDAYS.map((_, index) => index);
 
@@ -174,7 +170,7 @@ export function HoursGrid(props: {
           className="hours-grid__table"
           aria-disabled={disabled}
           style={{
-            gridTemplateColumns: `104px repeat(${columns}, ${resolution === 1 ? 24 : 40}px)`,
+            gridTemplateColumns: `max-content repeat(${columns}, ${resolution === 1 ? 24 : 40}px)`,
           }}
           onPointerDown={(event) => {
             const cell = cellFrom(event);
@@ -196,39 +192,19 @@ export function HoursGrid(props: {
           onPointerUp={() => finish(true)}
           onPointerCancel={() => finish(false)}
         >
-          <button
-            type="button"
-            className="hours-grid__corner"
-            disabled={disabled}
-            title="Alles im sichtbaren Bereich umschalten"
-            onClick={() => toggle(allDays, viewFrom, viewTo)}
-          >
-            Alle
-          </button>
+          <div />
           {hours.map((hour) => (
-            <button
+            <div
               key={hour}
-              type="button"
               className="hours-grid__hour"
               style={{ gridColumn: `span ${2 / resolution}` }}
-              disabled={disabled}
-              title={`${timeOf(hour * 2)}–${timeOf(hour * 2 + 2)} Uhr an allen Tagen umschalten`}
-              onClick={() => toggle(allDays, hour * 2, hour * 2 + 2)}
             >
               <span>{hour}</span>
-            </button>
+            </div>
           ))}
           {WEEKDAYS.map((weekday, day) => (
             <Fragment key={weekday}>
-              <button
-                type="button"
-                className="hours-grid__day"
-                disabled={disabled}
-                title={`${WEEKDAY_NAMES[weekday]} ganz umschalten`}
-                onClick={() => toggle([day], viewFrom, viewTo)}
-              >
-                {WEEKDAY_NAMES[weekday]}
-              </button>
+              <div className="hours-grid__day">{WEEKDAY_NAMES[weekday]}</div>
               {Array.from({ length: columns }, (_, col) => {
                 const state = stateOf(day, col);
                 const preview = inArea(day, col) ? (drag?.open ? 'open' : 'closed') : undefined;
