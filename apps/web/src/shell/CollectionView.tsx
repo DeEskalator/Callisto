@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { errorMessage } from '../app/api';
+import { localized } from '../lib/i18n';
 import { DataGrid, type GridColumn } from '../ui/DataGrid';
 import type { MenuEntry } from '../ui/Menu';
 import { ConfirmDialog } from '../ui/Modal';
@@ -9,9 +10,32 @@ import { useNotify } from '../ui/Toast';
 import { type Command, deleteCommand, editCommand, newCommand, refreshCommand } from './commands';
 import { ViewFrame } from './ViewFrame';
 
+const t = localized({
+  de: {
+    deleted: (name: string) => `„${name}“ wurde gelöscht`,
+    saved: (name: string) => `„${name}“ wurde gespeichert`,
+    edit: 'Bearbeiten …',
+    delete: 'Löschen …',
+    details: 'Details',
+    nothingSelected: 'Kein Eintrag ausgewählt',
+    deleteTitle: (noun: string) => `${noun} löschen`,
+    confirmDelete: 'Löschen',
+  },
+  en: {
+    deleted: (name: string) => `“${name}” was deleted`,
+    saved: (name: string) => `“${name}” was saved`,
+    edit: 'Edit …',
+    delete: 'Delete …',
+    details: 'Details',
+    nothingSelected: 'Nothing selected',
+    deleteTitle: (noun: string) => `Delete ${noun.toLowerCase()}`,
+    confirmDelete: 'Delete',
+  },
+});
+
 interface CollectionViewProps<Item> {
   title: string;
-  /** Singular and plural of what the list holds, for the status bar ("3 Kategorien"). */
+  /** Singular and plural of what the list holds, for the status bar ("3 categories"). */
   noun: [singular: string, plural: string];
   items: Item[];
   itemId: (item: Item) => string;
@@ -66,7 +90,7 @@ export function CollectionView<Item>(props: CollectionViewProps<Item>) {
     mutationFn: props.onDelete,
     onSuccess: (_result, item) => {
       setDeleting(undefined);
-      notify({ kind: 'success', title: `„${itemName(item)}“ wurde gelöscht` });
+      notify({ kind: 'success', title: t.deleted(itemName(item)) });
     },
   });
 
@@ -92,7 +116,7 @@ export function CollectionView<Item>(props: CollectionViewProps<Item>) {
     }
     return [
       {
-        label: 'Bearbeiten …',
+        label: t.edit,
         icon: Pencil,
         disabled: !editable(item),
         onSelect: () => setEditing(item),
@@ -108,7 +132,7 @@ export function CollectionView<Item>(props: CollectionViewProps<Item>) {
       ),
       { type: 'separator' },
       {
-        label: 'Löschen …',
+        label: t.delete,
         icon: Trash2,
         danger: true,
         disabled: !deletable(item),
@@ -124,11 +148,11 @@ export function CollectionView<Item>(props: CollectionViewProps<Item>) {
       commands={commands}
       status={`${count} ${count === 1 ? props.noun[0] : props.noun[1]}`}
       inspector={{
-        title: 'Details',
+        title: t.details,
         content: selected ? (
           props.details(selected)
         ) : (
-          <div className="inspector__empty">Kein Eintrag ausgewählt</div>
+          <div className="inspector__empty">{t.nothingSelected}</div>
         ),
       }}
     >
@@ -160,14 +184,14 @@ export function CollectionView<Item>(props: CollectionViewProps<Item>) {
           saved: (item) => {
             setSelectedId(itemId(item));
             setEditing(undefined);
-            notify({ kind: 'success', title: `„${itemName(item)}“ wurde gespeichert` });
+            notify({ kind: 'success', title: t.saved(itemName(item)) });
           },
         })}
       {deleting && (
         <ConfirmDialog
-          title={`${props.noun[0]} löschen`}
+          title={t.deleteTitle(props.noun[0])}
           text={props.deleteText(deleting)}
-          confirmLabel="Löschen"
+          confirmLabel={t.confirmDelete}
           danger
           busy={remove.isPending}
           error={remove.isError ? errorMessage(remove.error) : undefined}

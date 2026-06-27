@@ -1,12 +1,33 @@
 import { type OpeningHours, type TimeRange, WEEKDAYS, type Weekday } from '@callisto/domain';
 import { Fragment, type PointerEvent, useEffect, useState } from 'react';
-import { WEEKDAY_NAMES } from '../../lib/format';
+import { WEEKDAY_NAMES, WEEKDAY_SHORT } from '../../lib/format';
+import { localized } from '../../lib/i18n';
 
 /** Half hours per day; opening hours never use anything finer (see the domain schema). */
 const SLOTS = 48;
 const DEFAULT_FROM = 6 * 2;
 const DEFAULT_TO = 21 * 2;
-const SHORT_NAMES = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+const t = localized({
+  de: {
+    hint: 'Ziehen Sie über das Raster, um Zeiten zu öffnen oder zu schließen.',
+    range: (from: string, to: string) => `${from}–${to} Uhr`,
+    willOpen: 'wird geöffnet',
+    willClose: 'wird geschlossen',
+    open: 'geöffnet',
+    closed: 'geschlossen',
+    partial: 'teilweise geöffnet',
+  },
+  en: {
+    hint: 'Drag across the grid to open or close times.',
+    range: (from: string, to: string) => `${from}–${to}`,
+    willOpen: 'will be opened',
+    willClose: 'will be closed',
+    open: 'open',
+    closed: 'closed',
+    partial: 'partly open',
+  },
+});
 
 type Week = boolean[][];
 type Cell = { day: number; col: number };
@@ -141,20 +162,19 @@ export function HoursGrid(props: {
     setDrag(undefined);
   };
 
-  let status = 'Ziehen Sie über das Raster, um Zeiten zu öffnen oder zu schließen.';
+  let status = t.hint;
   if (area && drag) {
     const days =
       area.day0 === area.day1
         ? WEEKDAY_NAMES[WEEKDAYS[area.day0] as Weekday]
-        : `${SHORT_NAMES[area.day0]}–${SHORT_NAMES[area.day1]}`;
-    status = `${days}, ${timeOf(slotsOfColumn(area.col0)[0])}–${timeOf(
-      slotsOfColumn(area.col1)[1],
-    )} Uhr wird ${drag.open ? 'geöffnet' : 'geschlossen'}`;
+        : `${WEEKDAY_SHORT[WEEKDAYS[area.day0] as Weekday]}–${WEEKDAY_SHORT[WEEKDAYS[area.day1] as Weekday]}`;
+    const range = t.range(timeOf(slotsOfColumn(area.col0)[0]), timeOf(slotsOfColumn(area.col1)[1]));
+    status = `${days}, ${range} ${drag.open ? t.willOpen : t.willClose}`;
   } else if (hovered) {
     const [from, to] = slotsOfColumn(hovered.col);
     const state = stateOf(hovered.day, hovered.col);
-    status = `${WEEKDAY_NAMES[WEEKDAYS[hovered.day] as Weekday]}, ${timeOf(from)}–${timeOf(to)} Uhr: ${
-      state === 'open' ? 'geöffnet' : state === 'closed' ? 'geschlossen' : 'teilweise geöffnet'
+    status = `${WEEKDAY_NAMES[WEEKDAYS[hovered.day] as Weekday]}, ${t.range(timeOf(from), timeOf(to))}: ${
+      state === 'open' ? t.open : state === 'closed' ? t.closed : t.partial
     }`;
   }
 

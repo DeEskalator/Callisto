@@ -13,15 +13,33 @@ import { PracticeSettingsView } from '../features/settings/PracticeSettingsView'
 import { TemplatesView } from '../features/templates/TemplatesView';
 import { RolesView } from '../features/users/RolesView';
 import { UsersView } from '../features/users/UsersView';
+import { localized } from '../lib/i18n';
 import { AppShell } from '../shell/AppShell';
 import type { AppPath } from '../shell/navigation';
 import { ViewFrame } from '../shell/ViewFrame';
 
+const t = localized({
+  de: {
+    notFound: 'Nicht gefunden',
+    noSuchAddress: 'Diese Adresse gibt es nicht.',
+    error: 'Fehler',
+    viewFailed: 'Diese Ansicht konnte nicht angezeigt werden.',
+    retry: 'Erneut versuchen',
+  },
+  en: {
+    notFound: 'Not found',
+    noSuchAddress: 'This address does not exist.',
+    error: 'Error',
+    viewFailed: 'This view could not be shown.',
+    retry: 'Try again',
+  },
+});
+
 const rootRoute = createRootRoute({
   component: AppShell,
   notFoundComponent: () => (
-    <ViewFrame title="Nicht gefunden" padded>
-      <p className="view__intro">Diese Adresse gibt es nicht.</p>
+    <ViewFrame title={t.notFound} padded>
+      <p className="view__intro">{t.noSuchAddress}</p>
     </ViewFrame>
   ),
 });
@@ -29,16 +47,15 @@ const rootRoute = createRootRoute({
 /** Shown in place of a view that failed to render, so the rest of the window stays usable. */
 function ViewError(props: { error: unknown; reset: () => void }) {
   return (
-    <ViewFrame title="Fehler" padded>
+    <ViewFrame title={t.error} padded>
       <div className="notice notice--danger" role="alert">
         <div>
-          <strong>Diese Ansicht konnte nicht angezeigt werden.</strong>{' '}
-          {props.error instanceof Error ? props.error.message : ''}
+          <strong>{t.viewFailed}</strong> {props.error instanceof Error ? props.error.message : ''}
         </div>
       </div>
       <p className="view__intro" style={{ marginTop: 12 }}>
         <button type="button" className="btn" onClick={props.reset}>
-          Erneut versuchen
+          {t.retry}
         </button>
       </p>
     </ViewFrame>

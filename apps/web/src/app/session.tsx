@@ -1,8 +1,24 @@
 import { WebStorageStateStore } from 'oidc-client-ts';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react';
 import { AuthProvider, hasAuthParams, useAuth } from 'react-oidc-context';
+import { localized } from '../lib/i18n';
 import { Splash } from '../shell/Splash';
 import type { OidcSettings } from './config';
+
+const t = localized({
+  de: {
+    failed: 'Die Anmeldung ist fehlgeschlagen',
+    retry: 'Erneut anmelden',
+    signIn: 'Anmeldung',
+    redirecting: 'Sie werden zur Anmeldung weitergeleitet …',
+  },
+  en: {
+    failed: 'Sign-in failed',
+    retry: 'Sign in again',
+    signIn: 'Sign-in',
+    redirecting: 'Taking you to the sign-in …',
+  },
+});
 
 /** What the rest of the app needs to know about the signed-in user's session. */
 export interface Session {
@@ -92,14 +108,14 @@ function OidcSession(props: { settings: OidcSettings; children: ReactNode }) {
   if (auth.error) {
     return (
       <Splash
-        title="Die Anmeldung ist fehlgeschlagen"
+        title={t.failed}
         text={auth.error.message}
-        action={{ label: 'Erneut anmelden', run: () => void auth.signinRedirect() }}
+        action={{ label: t.retry, run: () => void auth.signinRedirect() }}
       />
     );
   }
   if (!auth.isAuthenticated) {
-    return <Splash title="Anmeldung" text="Sie werden zur Anmeldung weitergeleitet …" busy />;
+    return <Splash title={t.signIn} text={t.redirecting} busy />;
   }
   return <SessionContext value={session}>{props.children}</SessionContext>;
 }

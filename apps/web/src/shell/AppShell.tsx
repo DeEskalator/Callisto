@@ -5,6 +5,7 @@ import { useHasPermission, useMe, useOpenInquiries } from '../app/queries';
 import { CallsView } from '../features/dashboard/CallsView';
 import { InquiriesView } from '../features/dashboard/InquiriesView';
 import { TestCallDialog } from '../features/testcall/TestCallDialog';
+import { localized } from '../lib/i18n';
 import { isTyping, matchesShortcut } from '../lib/platform';
 import { AboutDialog, ShortcutsDialog } from './AboutDialogs';
 import { AppMenubar } from './AppMenubar';
@@ -23,6 +24,11 @@ import { StatusBar } from './StatusBar';
 import { ViewScope } from './ViewFrame';
 
 const NAV_VISIBLE_KEY = 'callisto.nav-visible';
+
+const t = localized({
+  de: { today: 'Tagesgeschehen', openInquiries: 'Offene Anliegen' },
+  en: { today: 'Today', openInquiries: 'Open inquiries' },
+});
 
 /** The destinations of a navigation the signed-in user may see. */
 function useVisible(navigation: NavGroup[]): NavGroup[] {
@@ -160,9 +166,9 @@ export function AppShell() {
                     groupResizeBehavior="preserve-pixel-size"
                   >
                     <NavTree
-                      label="Tagesgeschehen"
+                      label={t.today}
                       navigation={mainNavigation}
-                      badges={{ '/': { count: openInquiries, title: 'Offene Anliegen' } }}
+                      badges={{ '/': { count: openInquiries, title: t.openInquiries } }}
                     />
                   </Panel>
                   <Separator className="pane-separator" />

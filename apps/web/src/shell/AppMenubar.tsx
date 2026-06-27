@@ -5,11 +5,61 @@ import { DropdownMenu, Menubar } from 'radix-ui';
 import { useMe, useStatus } from '../app/queries';
 import { useSession } from '../app/session';
 import { initialsOf } from '../lib/format';
+import { locale, localized, setLocale } from '../lib/i18n';
 import { shortcutLabel } from '../lib/platform';
 import { setThemePreference, useThemePreference } from '../lib/theme';
 import { dropdownEntries, type MenuEntry, menubarEntries } from '../ui/Menu';
 import { type Command, useActiveView } from './commands';
 import type { NavGroup } from './navigation';
+
+const t = localized({
+  de: {
+    refresh: 'Aktualisieren',
+    signOut: 'Abmelden',
+    noActions: 'Keine Aktionen in dieser Ansicht',
+    showNavigation: 'Navigation anzeigen',
+    appearance: 'Darstellung',
+    system: 'Wie das System',
+    light: 'Hell',
+    dark: 'Dunkel',
+    language: 'Sprache',
+    testCall: 'Testanruf',
+    settings: 'Einstellungen',
+    shortcuts: 'Tastenkürzel …',
+    about: 'Über Callisto …',
+    switchDemoUser: 'Demo-Benutzer wechseln',
+    file: 'Datei',
+    edit: 'Bearbeiten',
+    view: 'Ansicht',
+    go: 'Gehe zu',
+    tools: 'Extras',
+    help: 'Hilfe',
+    mainMenu: 'Hauptmenü',
+  },
+  en: {
+    refresh: 'Refresh',
+    signOut: 'Sign out',
+    noActions: 'No actions in this view',
+    showNavigation: 'Show navigation',
+    appearance: 'Appearance',
+    system: 'Match system',
+    light: 'Light',
+    dark: 'Dark',
+    language: 'Language',
+    testCall: 'Test call',
+    settings: 'Settings',
+    shortcuts: 'Keyboard shortcuts …',
+    about: 'About Callisto …',
+    switchDemoUser: 'Switch demo user',
+    file: 'File',
+    edit: 'Edit',
+    view: 'View',
+    go: 'Go',
+    tools: 'Tools',
+    help: 'Help',
+    mainMenu: 'Main menu',
+  },
+});
 
 function commandEntry(command: Command): MenuEntry {
   const entry: MenuEntry = {
@@ -32,7 +82,7 @@ function commandEntry(command: Command): MenuEntry {
 }
 
 /**
- * The menu bar. "Datei" and "Bearbeiten" show the commands of the active view, so every action
+ * The menu bar. "File" and "Edit" show the commands of the active view, so every action
  * of a toolbar or context menu can also be found here, together with its shortcut.
  */
 export function AppMenubar(props: {
@@ -53,7 +103,7 @@ export function AppMenubar(props: {
   const me = useMe().data;
   const practiceName = useStatus().data?.practiceName;
 
-  // By convention creating and saving live in "Datei", everything else in "Bearbeiten".
+  // By convention creating and saving live in "File", everything else in "Edit".
   const commands = view?.commands ?? [];
   const inFileMenu = (command: Command) => ['new', 'save', 'discard'].includes(command.id);
   const fileCommands = commands.filter(inFileMenu);
@@ -68,30 +118,35 @@ export function AppMenubar(props: {
     refresh
       ? commandEntry(refresh)
       : {
-          label: 'Aktualisieren',
+          label: t.refresh,
           shortcut: shortcutLabel({ key: 'r', alt: true }),
           onSelect: () => void queryClient.invalidateQueries(),
         },
     { type: 'separator' },
-    { label: 'Abmelden', icon: LogOut, onSelect: session.signOut },
+    { label: t.signOut, icon: LogOut, onSelect: session.signOut },
   ];
 
   const editMenu: MenuEntry[] =
     editCommands.length > 0
       ? editCommands.map(commandEntry)
-      : [{ label: 'Keine Aktionen in dieser Ansicht', disabled: true, onSelect: () => {} }];
+      : [{ label: t.noActions, disabled: true, onSelect: () => {} }];
 
   const viewMenu: MenuEntry[] = [
-    { label: 'Navigation anzeigen', checked: props.navVisible, onSelect: props.onToggleNav },
+    { label: t.showNavigation, checked: props.navVisible, onSelect: props.onToggleNav },
     { type: 'separator' },
-    { type: 'label', label: 'Darstellung' },
+    { type: 'label', label: t.appearance },
     {
-      label: 'Wie das System',
+      label: t.system,
       checked: theme === 'system',
       onSelect: () => setThemePreference('system'),
     },
-    { label: 'Hell', checked: theme === 'light', onSelect: () => setThemePreference('light') },
-    { label: 'Dunkel', checked: theme === 'dark', onSelect: () => setThemePreference('dark') },
+    { label: t.light, checked: theme === 'light', onSelect: () => setThemePreference('light') },
+    { label: t.dark, checked: theme === 'dark', onSelect: () => setThemePreference('dark') },
+    { type: 'separator' },
+    { type: 'label', label: t.language },
+    // Each language is named in itself, so that it can be found without understanding the other.
+    { label: 'Deutsch', checked: locale === 'de', onSelect: () => setLocale('de') },
+    { label: 'English', checked: locale === 'en', onSelect: () => setLocale('en') },
   ];
 
   let position = 0;
@@ -113,14 +168,14 @@ export function AppMenubar(props: {
 
   const toolsMenu: MenuEntry[] = [
     {
-      label: 'Testanruf …',
+      label: `${t.testCall} …`,
       icon: PhoneCall,
       disabled: !props.mayTest,
       onSelect: () => props.onShowDialog('testcall'),
     },
     { type: 'separator' },
     {
-      label: 'Einstellungen',
+      label: t.settings,
       icon: Settings,
       checked: props.settingsOpen,
       shortcut: shortcutLabel({ key: ',', alt: true }),
@@ -129,15 +184,15 @@ export function AppMenubar(props: {
   ];
 
   const helpMenu: MenuEntry[] = [
-    { label: 'Tastenkürzel …', onSelect: () => props.onShowDialog('shortcuts') },
+    { label: t.shortcuts, onSelect: () => props.onShowDialog('shortcuts') },
     { type: 'separator' },
-    { label: 'Über Callisto …', onSelect: () => props.onShowDialog('about') },
+    { label: t.about, onSelect: () => props.onShowDialog('about') },
   ];
 
   const userMenu: MenuEntry[] = [
     ...(session.devUsers
       ? [
-          { type: 'label', label: 'Demo-Benutzer wechseln' } as const,
+          { type: 'label', label: t.switchDemoUser } as const,
           ...session.devUsers.map(
             (user): MenuEntry => ({
               label: user.label,
@@ -152,16 +207,16 @@ export function AppMenubar(props: {
           { type: 'separator' } as const,
         ]
       : []),
-    { label: 'Abmelden', icon: LogOut, onSelect: session.signOut },
+    { label: t.signOut, icon: LogOut, onSelect: session.signOut },
   ];
 
   const menus: Array<[string, MenuEntry[]]> = [
-    ['Datei', fileMenu],
-    ['Bearbeiten', editMenu],
-    ['Ansicht', viewMenu],
-    ['Gehe zu', goMenu],
-    ['Extras', toolsMenu],
-    ['Hilfe', helpMenu],
+    [t.file, fileMenu],
+    [t.edit, editMenu],
+    [t.view, viewMenu],
+    [t.go, goMenu],
+    [t.tools, toolsMenu],
+    [t.help, helpMenu],
   ];
 
   return (
@@ -170,7 +225,7 @@ export function AppMenubar(props: {
         <img src="/favicon.svg" alt="" />
         Callisto
       </span>
-      <Menubar.Root className="menubar__menus" aria-label="Hauptmenü">
+      <Menubar.Root className="menubar__menus" aria-label={t.mainMenu}>
         {menus.map(([label, entries]) => (
           <Menubar.Menu key={label}>
             <Menubar.Trigger className="menubar__trigger">{label}</Menubar.Trigger>
@@ -191,7 +246,7 @@ export function AppMenubar(props: {
           onClick={() => props.onShowDialog('testcall')}
         >
           <PhoneCall />
-          Testanruf
+          {t.testCall}
         </button>
       )}
       <button
@@ -201,7 +256,7 @@ export function AppMenubar(props: {
         onClick={props.onToggleSettings}
       >
         <Settings />
-        Einstellungen
+        {t.settings}
       </button>
       {me && (
         <DropdownMenu.Root>

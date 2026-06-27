@@ -10,6 +10,7 @@ import {
 import { data, useApi } from '../../app/api';
 import { useConfig, useHasPermission, useInvalidatePlanning } from '../../app/queries';
 import { formatDate, WEEKDAY_NAMES, WEEKDAY_SHORT } from '../../lib/format';
+import { localized } from '../../lib/i18n';
 import { CollectionView } from '../../shell/CollectionView';
 import { ViewFrame } from '../../shell/ViewFrame';
 import type { GridColumn } from '../../ui/DataGrid';
@@ -17,6 +18,89 @@ import { Checkbox, FormRow } from '../../ui/Form';
 import { FormDialog, useFormDialog } from '../../ui/FormDialog';
 import { QueryState } from '../../ui/QueryState';
 import { CategoryName } from '../categories/CategoriesView';
+
+const t = localized({
+  de: {
+    from: (date: string) => `ab ${date}`,
+    title: 'Slot-Vorlagen',
+    name: 'Name',
+    category: 'Kategorie',
+    weekdays: 'Wochentage',
+    window: 'Zeitfenster',
+    interval: 'Takt',
+    capacity: 'Parallel',
+    validity: 'Gültig',
+    status: 'Status',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    noun: ['Slot-Vorlage', 'Slot-Vorlagen'] as [string, string],
+    newTemplate: 'Neue Vorlage …',
+    empty: 'Noch keine Slot-Vorlagen',
+    emptyHint:
+      'Eine Vorlage legt fest, an welchen Wochentagen und zu welchen Zeiten Termine einer Kategorie buchbar sind.',
+    noCategories: 'Legen Sie zuerst unter „Kategorien“ mindestens eine Terminkategorie an.',
+    timeRange: (from: string, to: string) => `${from} – ${to} Uhr`,
+    every: (minutes: string) => `alle ${minutes} Minuten ein Termin`,
+    onePatient: 'Ein Patient je Termin',
+    patients: (count: number) => `${count} Patienten gleichzeitig`,
+    inactiveLong: 'Inaktiv, erzeugt keine Slots',
+    deleteText: (name: string) =>
+      `Soll die Vorlage „${name}“ gelöscht werden? Ihre freien Slots werden entfernt, bereits gebuchte Termine bleiben bestehen.`,
+    editTitle: 'Slot-Vorlage bearbeiten',
+    newTitle: 'Neue Slot-Vorlage',
+    nameHint: 'Zum Beispiel „Vorsorge nachmittags“.',
+    until: 'bis',
+    windowEnd: 'Ende des Zeitfensters',
+    oClock: 'Uhr',
+    intervalHint:
+      'Abstand zwischen zwei Terminen. Ohne Angabe folgen die Termine direkt aufeinander.',
+    minutes: 'Minuten',
+    capacityHint: 'Wie viele Patienten zur selben Zeit einen Termin bekommen können.',
+    validFrom: 'ab',
+    validUntil: 'Gültig bis (leer für unbegrenzt)',
+    activeLabel: 'Aktiv: aus dieser Vorlage werden Slots erzeugt',
+  },
+  en: {
+    from: (date: string) => `from ${date}`,
+    title: 'Slot templates',
+    name: 'Name',
+    category: 'Category',
+    weekdays: 'Weekdays',
+    window: 'Time window',
+    interval: 'Interval',
+    capacity: 'Parallel',
+    validity: 'Valid',
+    status: 'Status',
+    active: 'Active',
+    inactive: 'Inactive',
+    noun: ['Slot template', 'slot templates'] as [string, string],
+    newTemplate: 'New template …',
+    empty: 'No slot templates yet',
+    emptyHint:
+      'A template defines on which weekdays and at which times appointments of a category can be booked.',
+    noCategories: 'First create at least one appointment category under “Categories”.',
+    timeRange: (from: string, to: string) => `${from} – ${to}`,
+    every: (minutes: string) => `one appointment every ${minutes} minutes`,
+    onePatient: 'One patient per appointment',
+    patients: (count: number) => `${count} patients at the same time`,
+    inactiveLong: 'Inactive, creates no slots',
+    deleteText: (name: string) =>
+      `Delete the template “${name}”? Its free slots are removed; appointments already booked remain.`,
+    editTitle: 'Edit slot template',
+    newTitle: 'New slot template',
+    nameHint: 'For example “Check-ups in the afternoon”.',
+    until: 'to',
+    windowEnd: 'End of the time window',
+    oClock: '',
+    intervalHint:
+      'Time between two appointments. Without a value, appointments follow each other directly.',
+    minutes: 'minutes',
+    capacityHint: 'How many patients can get an appointment at the same time.',
+    validFrom: 'from',
+    validUntil: 'Valid until (empty for no end)',
+    activeLabel: 'Active: slots are created from this template',
+  },
+});
 
 const weekdaysText = (weekdays: Weekday[]) =>
   WEEKDAYS.filter((weekday) => weekdays.includes(weekday))
@@ -26,7 +110,7 @@ const weekdaysText = (weekdays: Weekday[]) =>
 const validityText = (template: SlotTemplate) =>
   template.validUntil
     ? `${formatDate(template.validFrom)} – ${formatDate(template.validUntil)}`
-    : `ab ${formatDate(template.validFrom)}`;
+    : t.from(formatDate(template.validFrom));
 
 /** Recurring windows in which a category can be booked, e.g. "Vorsorge, Di und Do 15–17 Uhr". */
 export function TemplatesView() {
@@ -37,7 +121,7 @@ export function TemplatesView() {
 
   if (!config.data) {
     return (
-      <ViewFrame title="Slot-Vorlagen">
+      <ViewFrame title={t.title}>
         <QueryState query={config} />
       </ViewFrame>
     );
@@ -52,14 +136,14 @@ export function TemplatesView() {
   const columns: GridColumn<SlotTemplate>[] = [
     {
       id: 'name',
-      header: 'Name',
+      header: t.name,
       width: 210,
       render: (template) => template.name,
       sortValue: (template) => template.name,
     },
     {
       id: 'category',
-      header: 'Kategorie',
+      header: t.category,
       width: 190,
       render: (template) => {
         const category = categoryOf(template);
@@ -69,42 +153,42 @@ export function TemplatesView() {
     },
     {
       id: 'weekdays',
-      header: 'Wochentage',
+      header: t.weekdays,
       width: 150,
       render: (template) => weekdaysText(template.weekdays),
     },
     {
       id: 'time',
-      header: 'Zeitfenster',
+      header: t.window,
       width: 130,
       render: (template) => `${template.from} – ${template.to}`,
       sortValue: (template) => template.from,
     },
     {
       id: 'interval',
-      header: 'Takt',
+      header: t.interval,
       width: 80,
       align: 'right',
       render: (template) => `${intervalOf(template) ?? '–'} min`,
     },
     {
       id: 'capacity',
-      header: 'Parallel',
+      header: t.capacity,
       width: 80,
       align: 'right',
       render: (template) => template.capacity,
       sortValue: (template) => template.capacity,
     },
-    { id: 'validity', header: 'Gültig', width: 190, muted: true, render: validityText },
+    { id: 'validity', header: t.validity, width: 190, muted: true, render: validityText },
     {
       id: 'active',
-      header: 'Status',
+      header: t.status,
       width: 110,
       render: (template) =>
         template.active ? (
-          <span className="pill pill--success">Aktiv</span>
+          <span className="pill pill--success">{t.active}</span>
         ) : (
-          <span className="pill">Inaktiv</span>
+          <span className="pill">{t.inactive}</span>
         ),
       sortValue: (template) => template.active,
     },
@@ -112,51 +196,42 @@ export function TemplatesView() {
 
   return (
     <CollectionView
-      title="Slot-Vorlagen"
-      noun={['Slot-Vorlage', 'Slot-Vorlagen']}
+      title={t.title}
+      noun={t.noun}
       items={templates}
       itemId={(template) => template.id}
       itemName={(template) => template.name}
       columns={columns}
       initialSort={{ columnId: 'name', descending: false }}
       canManage={canManage}
-      newLabel="Neue Vorlage …"
+      newLabel={t.newTemplate}
       onRefresh={() => void config.refetch()}
       empty={{
-        title: 'Noch keine Slot-Vorlagen',
-        hint:
-          categories.length > 0
-            ? 'Eine Vorlage legt fest, an welchen Wochentagen und zu welchen Zeiten Termine einer Kategorie buchbar sind.'
-            : 'Legen Sie zuerst unter „Kategorien“ mindestens eine Terminkategorie an.',
+        title: t.empty,
+        hint: categories.length > 0 ? t.emptyHint : t.noCategories,
       }}
       details={(template) => (
         <dl className="props">
-          <dt>Name</dt>
+          <dt>{t.name}</dt>
           <dd>{template.name}</dd>
-          <dt>Kategorie</dt>
+          <dt>{t.category}</dt>
           <dd>{categoryOf(template)?.name ?? '–'}</dd>
-          <dt>Wochentage</dt>
+          <dt>{t.weekdays}</dt>
           <dd>
             {WEEKDAYS.filter((weekday) => template.weekdays.includes(weekday))
               .map((weekday) => WEEKDAY_NAMES[weekday])
               .join(', ')}
           </dd>
-          <dt>Zeitfenster</dt>
-          <dd>
-            {template.from} – {template.to} Uhr
-          </dd>
-          <dt>Takt</dt>
-          <dd>alle {intervalOf(template) ?? '–'} Minuten ein Termin</dd>
-          <dt>Parallel</dt>
-          <dd>
-            {template.capacity === 1
-              ? 'Ein Patient je Termin'
-              : `${template.capacity} Patienten gleichzeitig`}
-          </dd>
-          <dt>Gültig</dt>
+          <dt>{t.window}</dt>
+          <dd>{t.timeRange(template.from, template.to)}</dd>
+          <dt>{t.interval}</dt>
+          <dd>{t.every(String(intervalOf(template) ?? '–'))}</dd>
+          <dt>{t.capacity}</dt>
+          <dd>{template.capacity === 1 ? t.onePatient : t.patients(template.capacity)}</dd>
+          <dt>{t.validity}</dt>
           <dd>{validityText(template)}</dd>
-          <dt>Status</dt>
-          <dd>{template.active ? 'Aktiv' : 'Inaktiv, erzeugt keine Slots'}</dd>
+          <dt>{t.status}</dt>
+          <dd>{template.active ? t.active : t.inactiveLong}</dd>
         </dl>
       )}
       dialog={({ item, close, saved }) => (
@@ -168,12 +243,7 @@ export function TemplatesView() {
           onSaved={saved}
         />
       )}
-      deleteText={(template) => (
-        <>
-          Soll die Vorlage „{template.name}“ gelöscht werden? Ihre freien Slots werden entfernt,
-          bereits gebuchte Termine bleiben bestehen.
-        </>
-      )}
+      deleteText={(template) => t.deleteText(template.name)}
       onDelete={async (template) => {
         await api.admin['slot-templates'][':id'].$delete({ param: { id: template.id } });
         await invalidate();
@@ -225,12 +295,8 @@ function TemplateDialog(props: {
     });
 
   return (
-    <FormDialog
-      title={template ? 'Slot-Vorlage bearbeiten' : 'Neue Slot-Vorlage'}
-      form={form}
-      onClose={props.onClose}
-    >
-      <FormRow label="Name" error={errors.name} hint="Zum Beispiel „Vorsorge nachmittags“.">
+    <FormDialog title={template ? t.editTitle : t.newTitle} form={form} onClose={props.onClose}>
+      <FormRow label={t.name} error={errors.name} hint={t.nameHint}>
         {(id) => (
           <input
             id={id}
@@ -243,7 +309,7 @@ function TemplateDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Kategorie" error={errors.categoryId}>
+      <FormRow label={t.category} error={errors.categoryId}>
         {(id) => (
           <select
             id={id}
@@ -259,10 +325,10 @@ function TemplateDialog(props: {
           </select>
         )}
       </FormRow>
-      <FormRow label="Wochentage" error={errors.weekdays}>
+      <FormRow label={t.weekdays} error={errors.weekdays}>
         {() => (
           // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own frame into the property sheet
-          <div className="segmented" role="group" aria-label="Wochentage">
+          <div className="segmented" role="group" aria-label={t.weekdays}>
             {WEEKDAYS.map((weekday) => (
               <button
                 key={weekday}
@@ -277,7 +343,7 @@ function TemplateDialog(props: {
           </div>
         )}
       </FormRow>
-      <FormRow label="Zeitfenster" error={errors.from ?? errors.to}>
+      <FormRow label={t.window} error={errors.from ?? errors.to}>
         {(id) => (
           <div className="form__row">
             <input
@@ -287,23 +353,19 @@ function TemplateDialog(props: {
               value={draft.from}
               onChange={(event) => set({ from: event.target.value })}
             />
-            bis
+            {t.until}
             <input
               type="time"
               className="input input--tiny"
-              aria-label="Ende des Zeitfensters"
+              aria-label={t.windowEnd}
               value={draft.to}
               onChange={(event) => set({ to: event.target.value })}
             />
-            Uhr
+            {t.oClock}
           </div>
         )}
       </FormRow>
-      <FormRow
-        label="Takt"
-        error={errors.intervalMinutes}
-        hint="Abstand zwischen zwei Terminen. Ohne Angabe folgen die Termine direkt aufeinander."
-      >
+      <FormRow label={t.interval} error={errors.intervalMinutes} hint={t.intervalHint}>
         {(id) => (
           <div className="form__row">
             <input
@@ -321,15 +383,11 @@ function TemplateDialog(props: {
                 })
               }
             />
-            Minuten
+            {t.minutes}
           </div>
         )}
       </FormRow>
-      <FormRow
-        label="Parallel"
-        error={errors.capacity}
-        hint="Wie viele Patienten zur selben Zeit einen Termin bekommen können."
-      >
+      <FormRow label={t.capacity} error={errors.capacity} hint={t.capacityHint}>
         {(id) => (
           <input
             id={id}
@@ -342,10 +400,10 @@ function TemplateDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Gültig" error={errors.validFrom ?? errors.validUntil}>
+      <FormRow label={t.validity} error={errors.validFrom ?? errors.validUntil}>
         {(id) => (
           <div className="form__row">
-            ab
+            {t.validFrom}
             <input
               id={id}
               type="date"
@@ -353,11 +411,11 @@ function TemplateDialog(props: {
               value={draft.validFrom}
               onChange={(event) => set({ validFrom: event.target.value })}
             />
-            bis
+            {t.until}
             <input
               type="date"
               className="input input--narrow"
-              aria-label="Gültig bis (leer für unbegrenzt)"
+              aria-label={t.validUntil}
               value={draft.validUntil ?? ''}
               min={draft.validFrom}
               onChange={(event) => set({ validUntil: event.target.value || undefined })}
@@ -365,10 +423,10 @@ function TemplateDialog(props: {
           </div>
         )}
       </FormRow>
-      <FormRow label="Status">
+      <FormRow label={t.status}>
         {() => (
           <Checkbox
-            label="Aktiv: aus dieser Vorlage werden Slots erzeugt"
+            label={t.activeLabel}
             checked={draft.active}
             onChange={(active) => set({ active })}
           />

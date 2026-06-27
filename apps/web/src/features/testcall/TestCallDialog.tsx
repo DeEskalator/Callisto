@@ -3,6 +3,7 @@ import { Keyboard, Mic, PhoneOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { data, errorMessage, useApi } from '../../app/api';
 import { queryKeys } from '../../app/queries';
+import { localized } from '../../lib/i18n';
 import { Modal } from '../../ui/Modal';
 import { Speaker, startMicrophone } from './audio';
 
@@ -13,12 +14,68 @@ interface Line {
   text: string;
 }
 
-const END_REASONS: Record<string, string> = {
-  completed: 'Das Gespräch wurde beendet.',
-  transferred: 'An dieser Stelle würde der Anrufer mit der Praxis verbunden.',
-  emergency: 'Der Assistent hat einen Notfall erkannt und das Gespräch beendet.',
-  failed: 'Das Gespräch wurde wegen einer Störung beendet.',
-};
+const t = localized({
+  de: {
+    endReasons: {
+      completed: 'Das Gespräch wurde beendet.',
+      transferred: 'An dieser Stelle würde der Anrufer mit der Praxis verbunden.',
+      emergency: 'Der Assistent hat einen Notfall erkannt und das Gespräch beendet.',
+      failed: 'Das Gespräch wurde wegen einer Störung beendet.',
+    } as Record<string, string>,
+    disconnected: 'Die Verbindung wurde getrennt.',
+    noMicrophone:
+      'Auf das Mikrofon kann nicht zugegriffen werden. Bitte erlauben Sie den Zugriff im Browser.',
+    title: 'Testanruf',
+    hangUp: 'Auflegen',
+    again: 'Neuer Testanruf',
+    close: 'Schließen',
+    intro:
+      'Sprechen oder schreiben Sie mit dem Assistenten, als würden Sie in der Praxis anrufen. Der Testanruf durchläuft dieselben Ansagen und Abläufe wie ein echter Anruf. Was dabei entsteht, wird als Test gekennzeichnet; gebuchte Termine belegen aber einen echten Slot, bis Sie sie unter „Anliegen“ wieder absagen.',
+    voice: 'Mit Sprache',
+    voiceHint: 'Über Mikrofon und Lautsprecher, wie am Telefon',
+    text: 'Mit Text',
+    textHint: 'Sie tippen, der Assistent antwortet schriftlich',
+    assistant: 'Assistent',
+    you: 'Sie',
+    connecting: 'Verbindung wird aufgebaut …',
+    microphoneOnHint: 'Das Mikrofon ist eingeschaltet',
+    microphoneOn: 'Mikrofon an',
+    message: 'Nachricht an den Assistenten',
+    speakOrType: 'Sprechen Sie, oder tippen Sie hier …',
+    yourAnswer: 'Ihre Antwort …',
+    send: 'Senden',
+  },
+  en: {
+    endReasons: {
+      completed: 'The call has ended.',
+      transferred: 'At this point the caller would be put through to the practice.',
+      emergency: 'The assistant recognised an emergency and ended the call.',
+      failed: 'The call was ended because of a failure.',
+    } as Record<string, string>,
+    disconnected: 'The connection was closed.',
+    noMicrophone: 'The microphone cannot be accessed. Please allow access in the browser.',
+    title: 'Test call',
+    hangUp: 'Hang up',
+    again: 'New test call',
+    close: 'Close',
+    intro:
+      'Speak or write with the assistant as if you were calling the practice. The test call goes through the same announcements and steps as a real call. Whatever it creates is marked as a test; booked appointments do take a real slot, though, until you cancel them under “Inquiries”.',
+    voice: 'With voice',
+    voiceHint: 'Through microphone and speaker, like on the phone',
+    text: 'With text',
+    textHint: 'You type, the assistant answers in writing',
+    assistant: 'Assistant',
+    you: 'You',
+    connecting: 'Connecting …',
+    microphoneOnHint: 'The microphone is on',
+    microphoneOn: 'Microphone on',
+    message: 'Message to the assistant',
+    speakOrType: 'Speak, or type here …',
+    yourAnswer: 'Your answer …',
+    send: 'Send',
+  },
+});
+const END_REASONS = t.endReasons;
 
 /**
  * A test call: a conversation with the assistant from the browser, typed or spoken. It goes
@@ -115,17 +172,13 @@ export function TestCallDialog(props: { onClose: () => void }) {
         stopMicrophone.current?.();
         stopMicrophone.current = undefined;
         setPhase((current) => (current === 'choose' ? current : 'ended'));
-        setNotice((current) => current ?? 'Die Verbindung wurde getrennt.');
+        setNotice((current) => current ?? t.disconnected);
         void refreshDailyView();
       };
     } catch (error) {
       release();
       setPhase('ended');
-      setNotice(
-        error instanceof DOMException
-          ? 'Auf das Mikrofon kann nicht zugegriffen werden. Bitte erlauben Sie den Zugriff im Browser.'
-          : errorMessage(error),
-      );
+      setNotice(error instanceof DOMException ? t.noMicrophone : errorMessage(error));
     }
   };
 
@@ -145,7 +198,7 @@ export function TestCallDialog(props: { onClose: () => void }) {
 
   return (
     <Modal
-      title="Testanruf"
+      title={t.title}
       onClose={props.onClose}
       // The dialog body is a form: Enter in the text field sends the line.
       onSubmit={send}
@@ -154,38 +207,33 @@ export function TestCallDialog(props: { onClose: () => void }) {
           {phase === 'talking' && (
             <button type="button" className="btn btn--danger" onClick={hangUp}>
               <PhoneOff />
-              Auflegen
+              {t.hangUp}
             </button>
           )}
           {phase === 'ended' && (
             <button type="button" className="btn" onClick={() => setPhase('choose')}>
-              Neuer Testanruf
+              {t.again}
             </button>
           )}
           <button type="button" className="btn" onClick={props.onClose}>
-            Schließen
+            {t.close}
           </button>
         </>
       }
     >
       {phase === 'choose' ? (
         <div className="testcall__choose">
-          <p className="dialog__description">
-            Sprechen oder schreiben Sie mit dem Assistenten, als würden Sie in der Praxis anrufen.
-            Der Testanruf durchläuft dieselben Ansagen und Abläufe wie ein echter Anruf. Was dabei
-            entsteht, wird als Test gekennzeichnet; gebuchte Termine belegen aber einen echten Slot,
-            bis Sie sie unter „Anliegen“ wieder absagen.
-          </p>
+          <p className="dialog__description">{t.intro}</p>
           <div className="testcall__modes">
             <button type="button" className="testcall__mode" onClick={() => void start('voice')}>
               <Mic />
-              <strong>Mit Sprache</strong>
-              <span>Über Mikrofon und Lautsprecher, wie am Telefon</span>
+              <strong>{t.voice}</strong>
+              <span>{t.voiceHint}</span>
             </button>
             <button type="button" className="testcall__mode" onClick={() => void start('text')}>
               <Keyboard />
-              <strong>Mit Text</strong>
-              <span>Sie tippen, der Assistent antwortet schriftlich</span>
+              <strong>{t.text}</strong>
+              <span>{t.textHint}</span>
             </button>
           </div>
         </div>
@@ -196,36 +244,32 @@ export function TestCallDialog(props: { onClose: () => void }) {
               // biome-ignore lint/suspicious/noArrayIndexKey: lines are only ever appended
               <li key={index} className="transcript__turn" data-role={line.role}>
                 <span className="transcript__meta">
-                  {line.role === 'assistant' ? 'Assistent' : 'Sie'}
+                  {line.role === 'assistant' ? t.assistant : t.you}
                 </span>
                 <span className="transcript__text">{line.text}</span>
               </li>
             ))}
-            {phase === 'connecting' && (
-              <li className="transcript__note">Verbindung wird aufgebaut …</li>
-            )}
+            {phase === 'connecting' && <li className="transcript__note">{t.connecting}</li>}
             {notice && <li className="transcript__note">{notice}</li>}
           </ol>
           {phase === 'talking' && (
             <div className="testcall__input">
               {mode === 'voice' && (
-                <span className="pill pill--danger" title="Das Mikrofon ist eingeschaltet">
-                  <Mic size={12} /> Mikrofon an
+                <span className="pill pill--danger" title={t.microphoneOnHint}>
+                  <Mic size={12} /> {t.microphoneOn}
                 </span>
               )}
               <input
                 className="input"
-                aria-label="Nachricht an den Assistenten"
-                placeholder={
-                  mode === 'voice' ? 'Sprechen Sie, oder tippen Sie hier …' : 'Ihre Antwort …'
-                }
+                aria-label={t.message}
+                placeholder={mode === 'voice' ? t.speakOrType : t.yourAnswer}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 // biome-ignore lint/a11y/noAutofocus: typing is what this dialog is for
                 autoFocus
               />
               <button type="submit" className="btn btn--primary" disabled={!draft.trim()}>
-                Senden
+                {t.send}
               </button>
             </div>
           )}

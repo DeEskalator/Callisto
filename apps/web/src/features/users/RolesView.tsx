@@ -8,6 +8,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { data, useApi } from '../../app/api';
 import { queryKeys } from '../../app/queries';
+import { localized } from '../../lib/i18n';
 import { CollectionView } from '../../shell/CollectionView';
 import { ViewFrame } from '../../shell/ViewFrame';
 import type { GridColumn } from '../../ui/DataGrid';
@@ -16,6 +17,49 @@ import { FormDialog, useFormDialog } from '../../ui/FormDialog';
 import { QueryState } from '../../ui/QueryState';
 import { PERMISSION_LABELS } from './permissions';
 import { useRoles, useUsers } from './UsersView';
+
+const t = localized({
+  de: {
+    title: 'Rollen',
+    role: 'Rolle',
+    kind: 'Art',
+    builtin: 'Vorgegeben',
+    custom: 'Eigene Rolle',
+    permissions: 'Rechte',
+    ofTotal: (granted: number, total: number) => `${granted} von ${total}`,
+    users: 'Benutzer',
+    noun: ['Rolle', 'Rollen'] as [string, string],
+    newRole: 'Neue Rolle …',
+    empty: 'Keine Rollen',
+    builtinLong: 'Vorgegeben, nicht änderbar',
+    nobody: 'Niemand',
+    deleteText: (name: string) => `Soll die Rolle „${name}“ gelöscht werden?`,
+    editTitle: 'Rolle bearbeiten',
+    newTitle: 'Neue Rolle',
+    name: 'Name',
+    nameHint: 'Zum Beispiel „Empfang“ oder „Auszubildende“.',
+  },
+  en: {
+    title: 'Roles',
+    role: 'Role',
+    kind: 'Kind',
+    builtin: 'Built-in',
+    custom: 'Custom role',
+    permissions: 'Permissions',
+    ofTotal: (granted: number, total: number) => `${granted} of ${total}`,
+    users: 'Users',
+    noun: ['Role', 'roles'] as [string, string],
+    newRole: 'New role …',
+    empty: 'No roles',
+    builtinLong: 'Built-in, cannot be changed',
+    nobody: 'Nobody',
+    deleteText: (name: string) => `Delete the role “${name}”?`,
+    editTitle: 'Edit role',
+    newTitle: 'New role',
+    name: 'Name',
+    nameHint: 'For example “Reception” or “Trainees”.',
+  },
+});
 
 /** Roles bundle permissions; every user has exactly one role. */
 export function RolesView() {
@@ -26,7 +70,7 @@ export function RolesView() {
 
   if (!roles.data || !users.data) {
     return (
-      <ViewFrame title="Rollen">
+      <ViewFrame title={t.title}>
         <QueryState query={roles.data ? users : roles} />
       </ViewFrame>
     );
@@ -42,30 +86,30 @@ export function RolesView() {
   const columns: GridColumn<Role>[] = [
     {
       id: 'name',
-      header: 'Rolle',
+      header: t.role,
       width: 220,
       render: (role) => role.name,
       sortValue: (role) => role.name,
     },
     {
       id: 'kind',
-      header: 'Art',
+      header: t.kind,
       width: 130,
       muted: true,
-      render: (role) => (role.builtin ? 'Vorgegeben' : 'Eigene Rolle'),
+      render: (role) => (role.builtin ? t.builtin : t.custom),
       sortValue: (role) => role.builtin,
     },
     {
       id: 'permissions',
-      header: 'Rechte',
+      header: t.permissions,
       width: 110,
       align: 'right',
-      render: (role) => `${role.permissions.length} von ${PERMISSIONS.length}`,
+      render: (role) => t.ofTotal(role.permissions.length, PERMISSIONS.length),
       sortValue: (role) => role.permissions.length,
     },
     {
       id: 'members',
-      header: 'Benutzer',
+      header: t.users,
       width: 100,
       align: 'right',
       render: (role) => membersOf(role).length,
@@ -75,33 +119,33 @@ export function RolesView() {
 
   return (
     <CollectionView
-      title="Rollen"
-      noun={['Rolle', 'Rollen']}
+      title={t.title}
+      noun={t.noun}
       items={roles.data}
       itemId={(role) => role.id}
       itemName={(role) => role.name}
       columns={columns}
       canManage
-      newLabel="Neue Rolle …"
+      newLabel={t.newRole}
       onRefresh={() => void roles.refetch()}
-      empty={{ title: 'Keine Rollen' }}
+      empty={{ title: t.empty }}
       canEdit={(role) => !role.builtin}
       canDelete={(role) => !role.builtin}
       details={(role) => (
         <>
           <dl className="props">
-            <dt>Rolle</dt>
+            <dt>{t.role}</dt>
             <dd>{role.name}</dd>
-            <dt>Art</dt>
-            <dd>{role.builtin ? 'Vorgegeben, nicht änderbar' : 'Eigene Rolle'}</dd>
-            <dt>Benutzer</dt>
+            <dt>{t.kind}</dt>
+            <dd>{role.builtin ? t.builtinLong : t.custom}</dd>
+            <dt>{t.users}</dt>
             <dd>
               {membersOf(role)
                 .map((user) => user.name)
-                .join(', ') || 'Niemand'}
+                .join(', ') || t.nobody}
             </dd>
           </dl>
-          <div className="inspector__section">Rechte</div>
+          <div className="inspector__section">{t.permissions}</div>
           <ul className="checklist">
             {PERMISSIONS.map((permission) => (
               <li key={permission} data-granted={role.permissions.includes(permission)}>
@@ -121,7 +165,7 @@ export function RolesView() {
           }}
         />
       )}
-      deleteText={(role) => <>Soll die Rolle „{role.name}“ gelöscht werden?</>}
+      deleteText={(role) => t.deleteText(role.name)}
       onDelete={async (role) => {
         await api.users.roles[':id'].$delete({ param: { id: role.id } });
         await refresh();
@@ -157,12 +201,8 @@ function RoleDialog(props: {
     });
 
   return (
-    <FormDialog
-      title={role ? 'Rolle bearbeiten' : 'Neue Rolle'}
-      form={form}
-      onClose={props.onClose}
-    >
-      <FormRow label="Name" error={errors.name} hint="Zum Beispiel „Empfang“ oder „Auszubildende“.">
+    <FormDialog title={role ? t.editTitle : t.newTitle} form={form} onClose={props.onClose}>
+      <FormRow label={t.name} error={errors.name} hint={t.nameHint}>
         {(id) => (
           <input
             id={id}
@@ -175,7 +215,7 @@ function RoleDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Rechte" error={errors.permissions}>
+      <FormRow label={t.permissions} error={errors.permissions}>
         {() => (
           <div className="permission-list">
             {PERMISSIONS.map((permission) => (

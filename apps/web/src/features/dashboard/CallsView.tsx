@@ -2,6 +2,7 @@ import { type Call, toZoned } from '@callisto/domain';
 import { useState } from 'react';
 import { useCall, useCallsOfDay } from '../../app/queries';
 import { formatDuration, formatPhone, formatTime } from '../../lib/format';
+import { localized } from '../../lib/i18n';
 import { refreshCommand } from '../../shell/commands';
 import { ViewFrame } from '../../shell/ViewFrame';
 import { DataGrid, type GridColumn } from '../../ui/DataGrid';
@@ -17,25 +18,76 @@ import {
   Transcript,
 } from './shared';
 
+const t = localized({
+  de: {
+    testVoice: 'Testanruf (Sprache)',
+    testText: 'Testanruf (Text)',
+    time: 'Uhrzeit',
+    caller: 'Anrufer',
+    duration: 'Dauer',
+    result: 'Ergebnis',
+    summary: 'Zusammenfassung',
+    title: 'Anrufe',
+    count: (calls: number, emergencies: number) =>
+      `${calls} ${calls === 1 ? 'Anruf' : 'Anrufe'}${emergencies > 0 ? ` · ${emergencies} Notfall` : ''}`,
+    showTests: 'Testanrufe zeigen',
+    conversation: 'Gespräch',
+    start: 'Beginn',
+    at: (time: string) => `${time} Uhr`,
+    shortSummary: 'Kurzfassung',
+    inquiries: 'Anliegen',
+    transcript: 'Verlauf',
+    nothingSelected: 'Kein Anruf ausgewählt',
+    noneToday: 'Heute hat noch niemand angerufen',
+    noneThatDay: 'Keine Anrufe an diesem Tag',
+  },
+  en: {
+    testVoice: 'Test call (voice)',
+    testText: 'Test call (text)',
+    time: 'Time',
+    caller: 'Caller',
+    duration: 'Duration',
+    result: 'Result',
+    summary: 'Summary',
+    title: 'Calls',
+    count: (calls: number, emergencies: number) =>
+      `${calls} ${calls === 1 ? 'call' : 'calls'}${
+        emergencies > 0
+          ? ` · ${emergencies} ${emergencies === 1 ? 'emergency' : 'emergencies'}`
+          : ''
+      }`,
+    showTests: 'Show test calls',
+    conversation: 'Conversation',
+    start: 'Started',
+    at: (time: string) => time,
+    shortSummary: 'Summary',
+    inquiries: 'Inquiries',
+    transcript: 'Transcript',
+    nothingSelected: 'No call selected',
+    noneToday: 'Nobody has called yet today',
+    noneThatDay: 'No calls on this day',
+  },
+});
+
 const callerOf = (call: Call) =>
   call.channel === 'phone'
     ? formatPhone(call.callerNumber)
     : call.channel === 'test_voice'
-      ? 'Testanruf (Sprache)'
-      : 'Testanruf (Text)';
+      ? t.testVoice
+      : t.testText;
 
 const columns: GridColumn<Call>[] = [
   {
     id: 'time',
-    header: 'Uhrzeit',
+    header: t.time,
     width: 90,
     render: (call) => formatTime(call.startedAt),
     sortValue: (call) => call.startedAt,
   },
-  { id: 'caller', header: 'Anrufer', width: 170, render: callerOf, sortValue: callerOf },
+  { id: 'caller', header: t.caller, width: 170, render: callerOf, sortValue: callerOf },
   {
     id: 'duration',
-    header: 'Dauer',
+    header: t.duration,
     width: 90,
     align: 'right',
     muted: true,
@@ -43,12 +95,12 @@ const columns: GridColumn<Call>[] = [
   },
   {
     id: 'status',
-    header: 'Ergebnis',
+    header: t.result,
     width: 140,
     render: (call) => <CallStatusPill status={call.status} />,
     sortValue: (call) => callStatusLabel(call.status),
   },
-  { id: 'summary', header: 'Zusammenfassung', width: 460, render: (call) => call.summary ?? '' },
+  { id: 'summary', header: t.summary, width: 460, render: (call) => call.summary ?? '' },
 ];
 
 /** Every call of a day: who called, how it ended, and the conversation itself. */
@@ -62,7 +114,7 @@ export function CallsView() {
 
   if (!calls.data) {
     return (
-      <ViewFrame title="Anrufe">
+      <ViewFrame title={t.title}>
         <QueryState query={calls} />
       </ViewFrame>
     );
@@ -73,40 +125,38 @@ export function CallsView() {
 
   return (
     <ViewFrame
-      title="Anrufe"
+      title={t.title}
       commands={[refreshCommand(() => void calls.refetch())]}
-      status={`${shown.length} ${shown.length === 1 ? 'Anruf' : 'Anrufe'}${
-        emergencies > 0 ? ` · ${emergencies} Notfall` : ''
-      }`}
+      status={t.count(shown.length, emergencies)}
       toolbarEnd={
         <div className="toolbar__nav">
-          <Checkbox label="Testanrufe zeigen" checked={showTests} onChange={setShowTests} />
+          <Checkbox label={t.showTests} checked={showTests} onChange={setShowTests} />
           <DayNavigation date={date} today={today} onChange={setDate} />
         </div>
       }
       inspector={{
-        title: 'Gespräch',
+        title: t.conversation,
         content: selected ? (
           <>
             <dl className="props">
-              <dt>Anrufer</dt>
+              <dt>{t.caller}</dt>
               <dd>{callerOf(selected)}</dd>
-              <dt>Beginn</dt>
-              <dd>{formatTime(selected.startedAt)} Uhr</dd>
-              <dt>Dauer</dt>
+              <dt>{t.start}</dt>
+              <dd>{t.at(formatTime(selected.startedAt))}</dd>
+              <dt>{t.duration}</dt>
               <dd>{formatDuration(selected.startedAt, selected.endedAt)}</dd>
-              <dt>Ergebnis</dt>
+              <dt>{t.result}</dt>
               <dd>{callStatusLabel(selected.status)}</dd>
               {selected.summary && (
                 <>
-                  <dt>Kurzfassung</dt>
+                  <dt>{t.shortSummary}</dt>
                   <dd>{selected.summary}</dd>
                 </>
               )}
             </dl>
             {detail && detail.inquiries.length > 0 && (
               <>
-                <div className="inspector__section">Anliegen</div>
+                <div className="inspector__section">{t.inquiries}</div>
                 {detail.inquiries.map((inquiry) => (
                   <div key={inquiry.id} className="linked-inquiry">
                     <InquiryTypeLabel type={inquiry.details.type} />
@@ -117,16 +167,16 @@ export function CallsView() {
                 ))}
               </>
             )}
-            <div className="inspector__section">Verlauf</div>
+            <div className="inspector__section">{t.transcript}</div>
             <Transcript callId={selected.id} />
           </>
         ) : (
-          <div className="inspector__empty">Kein Anruf ausgewählt</div>
+          <div className="inspector__empty">{t.nothingSelected}</div>
         ),
       }}
     >
       <DataGrid
-        label="Anrufe"
+        label={t.title}
         columns={columns}
         rows={shown}
         rowId={(call) => call.id}
@@ -134,7 +184,7 @@ export function CallsView() {
         onSelect={setSelectedId}
         initialSort={{ columnId: 'time', descending: true }}
         empty={{
-          title: date === today ? 'Heute hat noch niemand angerufen' : 'Keine Anrufe an diesem Tag',
+          title: date === today ? t.noneToday : t.noneThatDay,
         }}
       />
     </ViewFrame>

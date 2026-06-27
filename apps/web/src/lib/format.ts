@@ -1,46 +1,53 @@
 import type { LocalDate, Weekday } from '@callisto/domain';
+import { intlLocale, localized } from './i18n';
 
-export const WEEKDAY_NAMES: Record<Weekday, string> = {
-  mon: 'Montag',
-  tue: 'Dienstag',
-  wed: 'Mittwoch',
-  thu: 'Donnerstag',
-  fri: 'Freitag',
-  sat: 'Samstag',
-  sun: 'Sonntag',
-};
+export const WEEKDAY_NAMES: Record<Weekday, string> = localized({
+  de: {
+    mon: 'Montag',
+    tue: 'Dienstag',
+    wed: 'Mittwoch',
+    thu: 'Donnerstag',
+    fri: 'Freitag',
+    sat: 'Samstag',
+    sun: 'Sonntag',
+  },
+  en: {
+    mon: 'Monday',
+    tue: 'Tuesday',
+    wed: 'Wednesday',
+    thu: 'Thursday',
+    fri: 'Friday',
+    sat: 'Saturday',
+    sun: 'Sunday',
+  },
+});
 
-export const WEEKDAY_SHORT: Record<Weekday, string> = {
-  mon: 'Mo',
-  tue: 'Di',
-  wed: 'Mi',
-  thu: 'Do',
-  fri: 'Fr',
-  sat: 'Sa',
-  sun: 'So',
-};
+export const WEEKDAY_SHORT: Record<Weekday, string> = localized({
+  de: { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So' },
+  en: { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' },
+});
 
 // Local dates carry no time zone; formatting them as UTC keeps the day from shifting.
-const dateFormat = new Intl.DateTimeFormat('de-DE', {
+const dateFormat = new Intl.DateTimeFormat(intlLocale, {
   timeZone: 'UTC',
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
 });
-const longDateFormat = new Intl.DateTimeFormat('de-DE', {
+const longDateFormat = new Intl.DateTimeFormat(intlLocale, {
   timeZone: 'UTC',
   weekday: 'long',
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
-const shortDayFormat = new Intl.DateTimeFormat('de-DE', {
+const shortDayFormat = new Intl.DateTimeFormat(intlLocale, {
   timeZone: 'UTC',
   weekday: 'short',
   day: '2-digit',
   month: '2-digit',
 });
-const timestampFormat = new Intl.DateTimeFormat('de-DE', {
+const timestampFormat = new Intl.DateTimeFormat(intlLocale, {
   timeZone: 'Europe/Berlin',
   day: '2-digit',
   month: '2-digit',
@@ -74,7 +81,7 @@ export function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-const timeFormat = new Intl.DateTimeFormat('de-DE', {
+const timeFormat = new Intl.DateTimeFormat(intlLocale, {
   timeZone: 'Europe/Berlin',
   hour: '2-digit',
   minute: '2-digit',
@@ -95,7 +102,7 @@ export function formatDuration(fromIso: string, toIso: string | undefined): stri
 /** German phone numbers in national notation with a gap after the prefix; others unchanged. */
 export function formatPhone(number: string | undefined): string {
   if (!number) {
-    return 'Unterdrückt';
+    return localized({ de: 'Unterdrückt', en: 'Withheld' });
   }
   const national = number.startsWith('+49') ? `0${number.slice(3)}` : number;
   return /^01\d/.test(national) ? `${national.slice(0, 4)} ${national.slice(4)}` : national;

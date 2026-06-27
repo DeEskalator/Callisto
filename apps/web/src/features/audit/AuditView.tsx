@@ -4,30 +4,56 @@ import { useState } from 'react';
 import { data, useApi } from '../../app/api';
 import { queryKeys } from '../../app/queries';
 import { formatTimestamp } from '../../lib/format';
+import { localized } from '../../lib/i18n';
 import { refreshCommand } from '../../shell/commands';
 import { ViewFrame } from '../../shell/ViewFrame';
 import { DataGrid, type GridColumn } from '../../ui/DataGrid';
 import { QueryState } from '../../ui/QueryState';
 
+const t = localized({
+  de: {
+    at: 'Zeitpunkt',
+    actor: 'Benutzer',
+    summary: 'Vorgang',
+    action: 'Art',
+    title: 'Protokoll',
+    count: (count: number) => `${count} ${count === 1 ? 'Eintrag' : 'Einträge'}`,
+    month: 'Monat',
+    empty: 'Keine Einträge in diesem Monat',
+    emptyHint: 'Hier erscheint jede Änderung an Einstellungen, Terminplanung und Benutzerkonten.',
+  },
+  en: {
+    at: 'Time',
+    actor: 'User',
+    summary: 'Change',
+    action: 'Type',
+    title: 'Audit log',
+    count: (count: number) => `${count} ${count === 1 ? 'entry' : 'entries'}`,
+    month: 'Month',
+    empty: 'No entries in this month',
+    emptyHint: 'Every change to settings, scheduling and user accounts appears here.',
+  },
+});
+
 const columns: GridColumn<AuditEntry>[] = [
   {
     id: 'at',
-    header: 'Zeitpunkt',
+    header: t.at,
     width: 160,
     render: (entry) => formatTimestamp(entry.at),
     sortValue: (entry) => entry.at,
   },
   {
     id: 'actor',
-    header: 'Benutzer',
+    header: t.actor,
     width: 220,
     render: (entry) => entry.actorName,
     sortValue: (entry) => entry.actorName,
   },
-  { id: 'summary', header: 'Vorgang', width: 520, render: (entry) => entry.summary },
+  { id: 'summary', header: t.summary, width: 520, render: (entry) => entry.summary },
   {
     id: 'action',
-    header: 'Art',
+    header: t.action,
     width: 170,
     muted: true,
     render: (entry) => entry.action,
@@ -49,16 +75,12 @@ export function AuditView() {
 
   return (
     <ViewFrame
-      title="Protokoll"
+      title={t.title}
       commands={[refreshCommand(() => void audit.refetch())]}
-      status={
-        audit.data
-          ? `${entries.length} ${entries.length === 1 ? 'Eintrag' : 'Einträge'}`
-          : undefined
-      }
+      status={audit.data ? t.count(entries.length) : undefined}
       toolbarEnd={
         <label className="toolbar__field">
-          Monat
+          {t.month}
           <input
             type="month"
             className="input input--narrow"
@@ -71,7 +93,7 @@ export function AuditView() {
     >
       {audit.data ? (
         <DataGrid
-          label="Protokoll"
+          label={t.title}
           columns={columns}
           rows={entries}
           rowId={(entry) => entry.id}
@@ -79,8 +101,8 @@ export function AuditView() {
           onSelect={setSelectedId}
           initialSort={{ columnId: 'at', descending: true }}
           empty={{
-            title: 'Keine Einträge in diesem Monat',
-            hint: 'Hier erscheint jede Änderung an Einstellungen, Terminplanung und Benutzerkonten.',
+            title: t.empty,
+            hint: t.emptyHint,
           }}
         />
       ) : (

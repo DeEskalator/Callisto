@@ -17,28 +17,139 @@ import {
 } from 'lucide-react';
 import { useCall } from '../../app/queries';
 import { formatDate, formatLongDate, formatPhone, formatTime } from '../../lib/format';
+import { localized } from '../../lib/i18n';
+
+const t = localized({
+  de: {
+    types: {
+      appointment: 'Termin',
+      prescription: 'Rezept',
+      callback: 'Rückruf',
+      other: 'Sonstiges',
+    },
+    inquiryStatus: {
+      new: 'Neu',
+      in_progress: 'In Arbeit',
+      done: 'Erledigt',
+      cancelled: 'Storniert',
+    },
+    callStatus: {
+      in_progress: 'Läuft gerade',
+      completed: 'Abgeschlossen',
+      transferred: 'Verbunden',
+      emergency: 'Notfall',
+      abandoned: 'Aufgelegt',
+      failed: 'Störung',
+    },
+    unknown: 'Unbekannt',
+    appointmentOn: (category: string, date: string, time: string) =>
+      `${category} am ${date} um ${time} Uhr`,
+    type: 'Art',
+    status: 'Status',
+    patient: 'Patient',
+    born: 'Geboren',
+    notGiven: 'Nicht genannt',
+    phone: 'Telefon',
+    appointment: 'Termin',
+    timeRange: (from: string, to: string) => `${from} – ${to} Uhr`,
+    category: 'Kategorie',
+    reason: 'Anlass',
+    medications: 'Medikamente',
+    note: 'Hinweis',
+    concern: 'Anliegen',
+    reachable: 'Erreichbar',
+    transferred: 'Verbunden',
+    transferredYes: 'Ja, zur Praxis durchgestellt',
+    transferredNo: 'Nein',
+    received: 'Eingang',
+    at: (time: string) => `${time} Uhr`,
+    internalNote: 'Notiz',
+    noCall: 'Zu diesem Anliegen gibt es kein Gespräch.',
+    callFailed: 'Das Gespräch konnte nicht geladen werden.',
+    loading: 'Wird geladen …',
+    noPermission: 'Für das Lesen von Gesprächen fehlt Ihnen die Berechtigung „Transkripte lesen“.',
+    conversation: 'Gesprächsverlauf',
+    assistant: 'Assistent',
+    caller: 'Anrufer',
+    stillRunning: 'Das Gespräch läuft noch …',
+    previousDay: 'Vorheriger Tag',
+    today: 'Heute',
+    nextDay: 'Nächster Tag',
+  },
+  en: {
+    types: {
+      appointment: 'Appointment',
+      prescription: 'Prescription',
+      callback: 'Callback',
+      other: 'Other',
+    },
+    inquiryStatus: { new: 'New', in_progress: 'In progress', done: 'Done', cancelled: 'Cancelled' },
+    callStatus: {
+      in_progress: 'In progress',
+      completed: 'Completed',
+      transferred: 'Transferred',
+      emergency: 'Emergency',
+      abandoned: 'Hung up',
+      failed: 'Failure',
+    },
+    unknown: 'Unknown',
+    appointmentOn: (category: string, date: string, time: string) =>
+      `${category} on ${date} at ${time}`,
+    type: 'Type',
+    status: 'Status',
+    patient: 'Patient',
+    born: 'Born',
+    notGiven: 'Not given',
+    phone: 'Phone',
+    appointment: 'Appointment',
+    timeRange: (from: string, to: string) => `${from} – ${to}`,
+    category: 'Category',
+    reason: 'Reason',
+    medications: 'Medications',
+    note: 'Note',
+    concern: 'Concern',
+    reachable: 'Reachable',
+    transferred: 'Transferred',
+    transferredYes: 'Yes, put through to the practice',
+    transferredNo: 'No',
+    received: 'Received',
+    at: (time: string) => time,
+    internalNote: 'Note',
+    noCall: 'There is no conversation for this inquiry.',
+    callFailed: 'The conversation could not be loaded.',
+    loading: 'Loading …',
+    noPermission: 'You lack the permission “Read transcripts” to read conversations.',
+    conversation: 'Conversation',
+    assistant: 'Assistant',
+    caller: 'Caller',
+    stillRunning: 'The call is still going on …',
+    previousDay: 'Previous day',
+    today: 'Today',
+    nextDay: 'Next day',
+  },
+});
 
 export const INQUIRY_TYPES: Record<InquiryType, { label: string; icon: LucideIcon }> = {
-  appointment: { label: 'Termin', icon: CalendarCheck },
-  prescription: { label: 'Rezept', icon: Pill },
-  callback: { label: 'Rückruf', icon: PhoneCall },
-  other: { label: 'Sonstiges', icon: MessageSquareText },
+  appointment: { label: t.types.appointment, icon: CalendarCheck },
+  prescription: { label: t.types.prescription, icon: Pill },
+  callback: { label: t.types.callback, icon: PhoneCall },
+  other: { label: t.types.other, icon: MessageSquareText },
 };
 
 const INQUIRY_STATUS: Record<InquiryStatus, { label: string; className: string }> = {
-  new: { label: 'Neu', className: 'pill pill--accent' },
-  in_progress: { label: 'In Arbeit', className: 'pill pill--warning' },
-  done: { label: 'Erledigt', className: 'pill pill--success' },
-  cancelled: { label: 'Storniert', className: 'pill' },
+  new: { label: t.inquiryStatus.new, className: 'pill pill--accent' },
+  in_progress: { label: t.inquiryStatus.in_progress, className: 'pill pill--warning' },
+  done: { label: t.inquiryStatus.done, className: 'pill pill--success' },
+  cancelled: { label: t.inquiryStatus.cancelled, className: 'pill' },
 };
 
 const CALL_STATUS: Record<Call['status'], { label: string; className: string }> = {
-  in_progress: { label: 'Läuft gerade', className: 'pill pill--accent' },
-  completed: { label: 'Abgeschlossen', className: 'pill pill--success' },
-  transferred: { label: 'Verbunden', className: 'pill pill--success' },
-  emergency: { label: 'Notfall', className: 'pill pill--danger' },
-  abandoned: { label: 'Aufgelegt', className: 'pill' },
-  failed: { label: 'Störung', className: 'pill pill--danger' },
+  in_progress: { label: t.callStatus.in_progress, className: 'pill pill--accent' },
+  completed: { label: t.callStatus.completed, className: 'pill pill--success' },
+  transferred: { label: t.callStatus.transferred, className: 'pill pill--success' },
+  emergency: { label: t.callStatus.emergency, className: 'pill pill--danger' },
+  abandoned: { label: t.callStatus.abandoned, className: 'pill' },
+  failed: { label: t.callStatus.failed, className: 'pill pill--danger' },
 };
 
 export const inquiryStatusLabel = (status: InquiryStatus) => INQUIRY_STATUS[status].label;
@@ -66,14 +177,14 @@ export function InquiryTypeLabel(props: { type: InquiryType }) {
 
 /** `Brandt, Helga`, or what is known of the name. */
 export const patientName = (patient: Patient) =>
-  [patient.lastName, patient.firstName].filter(Boolean).join(', ') || 'Unbekannt';
+  [patient.lastName, patient.firstName].filter(Boolean).join(', ') || t.unknown;
 
 /** What an inquiry is about, in one line. */
 export function inquirySubject(inquiry: Inquiry): string {
   const { details } = inquiry;
   switch (details.type) {
     case 'appointment':
-      return `${details.categoryName} am ${formatDate(details.date)} um ${details.startTime} Uhr`;
+      return t.appointmentOn(details.categoryName, formatDate(details.date), details.startTime);
     case 'prescription':
       return details.medications
         .map((medication) => [medication.name, medication.strength].filter(Boolean).join(' '))
@@ -91,27 +202,27 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
   const { patient, details } = inquiry;
   return (
     <dl className="props">
-      <dt>Art</dt>
+      <dt>{t.type}</dt>
       <dd>{INQUIRY_TYPES[details.type].label}</dd>
-      <dt>Status</dt>
+      <dt>{t.status}</dt>
       <dd>{inquiryStatusLabel(inquiry.status)}</dd>
-      <dt>Patient</dt>
+      <dt>{t.patient}</dt>
       <dd>{patientName(patient)}</dd>
-      <dt>Geboren</dt>
-      <dd>{patient.dateOfBirth ? formatDate(patient.dateOfBirth) : 'Nicht genannt'}</dd>
-      <dt>Telefon</dt>
-      <dd>{patient.phone ? formatPhone(patient.phone) : 'Nicht genannt'}</dd>
+      <dt>{t.born}</dt>
+      <dd>{patient.dateOfBirth ? formatDate(patient.dateOfBirth) : t.notGiven}</dd>
+      <dt>{t.phone}</dt>
+      <dd>{patient.phone ? formatPhone(patient.phone) : t.notGiven}</dd>
       {details.type === 'appointment' && (
         <>
-          <dt>Termin</dt>
+          <dt>{t.appointment}</dt>
           <dd>
-            {formatLongDate(details.date)}, {details.startTime} – {details.endTime} Uhr
+            {formatLongDate(details.date)}, {t.timeRange(details.startTime, details.endTime)}
           </dd>
-          <dt>Kategorie</dt>
+          <dt>{t.category}</dt>
           <dd>{details.categoryName}</dd>
           {details.reason && (
             <>
-              <dt>Anlass</dt>
+              <dt>{t.reason}</dt>
               <dd>{details.reason}</dd>
             </>
           )}
@@ -119,7 +230,7 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
       )}
       {details.type === 'prescription' && (
         <>
-          <dt>Medikamente</dt>
+          <dt>{t.medications}</dt>
           <dd>
             {details.medications.map((medication) => (
               <div key={medication.name}>
@@ -131,7 +242,7 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
           </dd>
           {details.note && (
             <>
-              <dt>Hinweis</dt>
+              <dt>{t.note}</dt>
               <dd>{details.note}</dd>
             </>
           )}
@@ -139,11 +250,11 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
       )}
       {details.type === 'callback' && (
         <>
-          <dt>Anliegen</dt>
+          <dt>{t.concern}</dt>
           <dd>{details.topic}</dd>
           {details.preferredTime && (
             <>
-              <dt>Erreichbar</dt>
+              <dt>{t.reachable}</dt>
               <dd>{details.preferredTime}</dd>
             </>
           )}
@@ -151,19 +262,19 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
       )}
       {details.type === 'other' && (
         <>
-          <dt>Anliegen</dt>
+          <dt>{t.concern}</dt>
           <dd>{details.summary}</dd>
-          <dt>Verbunden</dt>
-          <dd>{details.transferred ? 'Ja, zur Praxis durchgestellt' : 'Nein'}</dd>
+          <dt>{t.transferred}</dt>
+          <dd>{details.transferred ? t.transferredYes : t.transferredNo}</dd>
         </>
       )}
-      <dt>Eingang</dt>
+      <dt>{t.received}</dt>
       <dd>
-        {formatDate(inquiry.date)}, {formatTime(inquiry.createdAt)} Uhr
+        {formatDate(inquiry.date)}, {t.at(formatTime(inquiry.createdAt))}
       </dd>
       {inquiry.note && (
         <>
-          <dt>Notiz</dt>
+          <dt>{t.internalNote}</dt>
           <dd>{inquiry.note}</dd>
         </>
       )}
@@ -175,35 +286,27 @@ export function InquiryProperties(props: { inquiry: Inquiry }) {
 export function Transcript(props: { callId: string | undefined }) {
   const call = useCall(props.callId);
   if (!props.callId) {
-    return <p className="transcript__note">Zu diesem Anliegen gibt es kein Gespräch.</p>;
+    return <p className="transcript__note">{t.noCall}</p>;
   }
   if (!call.data) {
-    return (
-      <p className="transcript__note">
-        {call.isError ? 'Das Gespräch konnte nicht geladen werden.' : 'Wird geladen …'}
-      </p>
-    );
+    return <p className="transcript__note">{call.isError ? t.callFailed : t.loading}</p>;
   }
   const { turns } = call.data;
   if (turns === null) {
-    return (
-      <p className="transcript__note">
-        Für das Lesen von Gesprächen fehlt Ihnen die Berechtigung „Transkripte lesen“.
-      </p>
-    );
+    return <p className="transcript__note">{t.noPermission}</p>;
   }
   return (
-    <ol className="transcript" aria-label="Gesprächsverlauf">
+    <ol className="transcript" aria-label={t.conversation}>
       {turns.map((turn) => (
         <li key={turn.seq} className="transcript__turn" data-role={turn.role}>
           <span className="transcript__meta">
-            {turn.role === 'assistant' ? 'Assistent' : 'Anrufer'} · {formatTime(turn.at)}
+            {turn.role === 'assistant' ? t.assistant : t.caller} · {formatTime(turn.at)}
           </span>
           <span className="transcript__text">{turn.text}</span>
         </li>
       ))}
       {call.data.call.status === 'in_progress' && (
-        <li className="transcript__note">Das Gespräch läuft noch …</li>
+        <li className="transcript__note">{t.stillRunning}</li>
       )}
     </ol>
   );
@@ -222,20 +325,20 @@ export function DayNavigation(props: {
       <button
         type="button"
         className="btn btn--icon"
-        aria-label="Vorheriger Tag"
-        title="Vorheriger Tag"
+        aria-label={t.previousDay}
+        title={t.previousDay}
         onClick={() => onChange(addDays(date, -1))}
       >
         <ChevronLeft />
       </button>
       <button type="button" className="btn" onClick={() => onChange(today)}>
-        Heute
+        {t.today}
       </button>
       <button
         type="button"
         className="btn btn--icon"
-        aria-label="Nächster Tag"
-        title="Nächster Tag"
+        aria-label={t.nextDay}
+        title={t.nextDay}
         disabled={date >= today}
         onClick={() => onChange(addDays(date, 1))}
       >

@@ -1,7 +1,23 @@
 import type { AdminApp, CallsApp, Problem, UsersApp } from '@callisto/api';
 import { hc } from 'hono/client';
 import { createContext, useContext } from 'react';
+import { localized } from '../lib/i18n';
 import type { Session } from './session';
+
+const t = localized({
+  de: {
+    expired: 'Die Anmeldung ist abgelaufen. Bitte melden Sie sich erneut an.',
+    failed: (status: number) => `Die Anfrage ist fehlgeschlagen (${status})`,
+    unexpected: 'Es ist ein unerwarteter Fehler aufgetreten.',
+    unreachable: 'Der Server ist nicht erreichbar.',
+  },
+  en: {
+    expired: 'Your session has expired. Please sign in again.',
+    failed: (status: number) => `The request failed (${status})`,
+    unexpected: 'An unexpected error occurred.',
+    unreachable: 'The server cannot be reached.',
+  },
+});
 
 /** A request the API rejected, with the German message the server sent for the user. */
 export class ApiError extends Error {
@@ -23,10 +39,7 @@ async function toApiError(response: Response): Promise<ApiError> {
     return new ApiError(response.status, problem.code, problem.title, problem.issues);
   } catch {
     // Errors raised by API Gateway itself do not follow our problem format.
-    const message =
-      response.status === 401
-        ? 'Die Anmeldung ist abgelaufen. Bitte melden Sie sich erneut an.'
-        : `Die Anfrage ist fehlgeschlagen (${response.status})`;
+    const message = response.status === 401 ? t.expired : t.failed(response.status);
     return new ApiError(response.status, 'gateway_error', message);
   }
 }
@@ -57,7 +70,7 @@ export function errorMessage(error: unknown): string {
     const details = error.issues.map((issue) => issue.message).join(' ');
     return details ? `${error.message}: ${details}` : error.message;
   }
-  return 'Es ist ein unerwarteter Fehler aufgetreten.';
+  return t.unexpected;
 }
 
 /**
@@ -74,7 +87,7 @@ export function createApiClient(baseUrl: string, session: Session) {
     try {
       response = await fetch(input, { ...init, headers });
     } catch {
-      throw new ApiError(0, 'network', 'Der Server ist nicht erreichbar.');
+      throw new ApiError(0, 'network', t.unreachable);
     }
     if (!response.ok) {
       throw await toApiError(response);

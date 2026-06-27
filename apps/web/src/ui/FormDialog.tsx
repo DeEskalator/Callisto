@@ -2,8 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import type { z } from 'zod';
 import { errorMessage } from '../app/api';
+import { localized } from '../lib/i18n';
 import { type FieldErrors, fieldErrorsOf } from './Form';
 import { Modal } from './Modal';
+
+const t = localized({
+  de: { cancel: 'Abbrechen', save: 'Speichern' },
+  en: { cancel: 'Cancel', save: 'Save' },
+});
 
 interface Parser<Parsed> {
   safeParse(
@@ -61,10 +67,10 @@ export function FormDialog(props: {
       footer={
         <>
           <button type="button" className="btn" onClick={props.onClose}>
-            Abbrechen
+            {t.cancel}
           </button>
           <button type="submit" className="btn btn--primary" disabled={props.form.saving}>
-            Speichern
+            {t.save}
           </button>
         </>
       }

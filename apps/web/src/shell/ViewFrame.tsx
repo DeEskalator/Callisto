@@ -1,7 +1,13 @@
 import { createContext, type ReactNode, useContext, useEffect } from 'react';
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels';
+import { localized } from '../lib/i18n';
 import { shortcutLabel } from '../lib/platform';
 import { type Command, viewStore } from './commands';
+
+const t = localized({
+  de: { actions: (view: string) => `Aktionen: ${view}` },
+  en: { actions: (view: string) => `Actions: ${view}` },
+});
 
 /**
  * Where a view is shown. While the settings sheet is open, the daily view stays visible behind
@@ -20,7 +26,7 @@ export const ViewScope = createContext<{ name: 'main' | 'sheet'; active: boolean
 export function ViewFrame(props: {
   title: string;
   commands?: Command[];
-  /** Text for the status bar, e.g. "12 Einträge". */
+  /** Text for the status bar, e.g. "12 entries". */
   status?: string | undefined;
   /** Controls at the right end of the toolbar, e.g. a period switcher. */
   toolbarEnd?: ReactNode;
@@ -53,7 +59,7 @@ export function ViewFrame(props: {
 
   return (
     <section className="view" aria-label={title}>
-      <div className="toolbar" role="toolbar" aria-label={`Aktionen: ${title}`}>
+      <div className="toolbar" role="toolbar" aria-label={t.actions(title)}>
         <h1 className="toolbar__title">{title}</h1>
         {commands
           .filter((command) => command.toolbar !== false)

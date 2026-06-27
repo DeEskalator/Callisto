@@ -1,6 +1,12 @@
 import { X } from 'lucide-react';
 import { Toast } from 'radix-ui';
 import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
+import { localized } from '../lib/i18n';
+
+const t = localized({
+  de: { notification: 'Meldung', dismiss: 'Meldung schließen' },
+  en: { notification: 'Notification', dismiss: 'Dismiss notification' },
+});
 
 interface Notification {
   id: number;
@@ -31,7 +37,7 @@ export function ToastProvider(props: { children: ReactNode }) {
 
   return (
     <NotifyContext value={notify}>
-      <Toast.Provider swipeDirection="right" label="Meldung">
+      <Toast.Provider swipeDirection="right" label={t.notification}>
         {props.children}
         {notifications.map((notification) => (
           <Toast.Root
@@ -51,7 +57,7 @@ export function ToastProvider(props: { children: ReactNode }) {
               <button
                 type="button"
                 className="btn btn--ghost btn--icon toast__close"
-                aria-label="Meldung schließen"
+                aria-label={t.dismiss}
               >
                 <X />
               </button>

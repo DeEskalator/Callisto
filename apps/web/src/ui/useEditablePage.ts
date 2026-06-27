@@ -2,8 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { z } from 'zod';
 import { errorMessage } from '../app/api';
+import { localized } from '../lib/i18n';
 import { type FieldErrors, fieldErrorsOf } from './Form';
 import { useNotify } from './Toast';
+
+const t = localized({
+  de: { notSaved: 'Nicht gespeichert', checkFields: 'Bitte prüfen Sie die markierten Angaben' },
+  en: { notSaved: 'Not saved', checkFields: 'Please check the highlighted fields' },
+});
 
 interface Parser<Parsed> {
   safeParse(
@@ -35,8 +41,7 @@ export function useEditablePage<Value>(options: {
       setDraft(undefined);
       notify({ kind: 'success', title: options.savedMessage });
     },
-    onError: (error) =>
-      notify({ kind: 'error', title: 'Nicht gespeichert', text: errorMessage(error) }),
+    onError: (error) => notify({ kind: 'error', title: t.notSaved, text: errorMessage(error) }),
   });
 
   return {
@@ -54,7 +59,7 @@ export function useEditablePage<Value>(options: {
       const parsed = options.schema.safeParse(value);
       if (!parsed.success) {
         setErrors(fieldErrorsOf(parsed.error));
-        notify({ kind: 'error', title: 'Bitte prüfen Sie die markierten Angaben' });
+        notify({ kind: 'error', title: t.checkFields });
         return;
       }
       setErrors({});

@@ -1,33 +1,53 @@
 import { useIsFetching } from '@tanstack/react-query';
 import { useMe, useStatus } from '../app/queries';
 import { formatShortDay } from '../lib/format';
+import { localized } from '../lib/i18n';
 import { useActiveView } from './commands';
 
 type Status = NonNullable<ReturnType<typeof useStatus>['data']>;
+
+const t = localized({
+  de: {
+    opensToday: (time: string) => `öffnet um ${time} Uhr`,
+    opensOn: (day: string, time: string) => `öffnet ${day} um ${time} Uhr`,
+    noOpening: 'kein Öffnungstermin in Sicht',
+    openUntil: (time: string) => `Praxis geöffnet bis ${time} Uhr`,
+    closed: 'Geschlossen',
+    holiday: 'Feiertag',
+    practiceClosed: 'Praxis geschlossen',
+    statusHint: 'Was der Assistent Anrufern gerade sagt',
+    loading: 'Wird geladen …',
+  },
+  en: {
+    opensToday: (time: string) => `opens at ${time}`,
+    opensOn: (day: string, time: string) => `opens ${day} at ${time}`,
+    noOpening: 'no opening in sight',
+    openUntil: (time: string) => `Practice open until ${time}`,
+    closed: 'Closed',
+    holiday: 'Public holiday',
+    practiceClosed: 'Practice closed',
+    statusHint: 'What the assistant is telling callers right now',
+    loading: 'Loading …',
+  },
+});
 
 function openingText(status: Status): { tone: string; text: string } {
   const next = status.nextOpening;
   const reopening = next
     ? next.date === status.localDate
-      ? `öffnet um ${next.from} Uhr`
-      : `öffnet ${formatShortDay(next.date)} um ${next.from} Uhr`
-    : 'kein Öffnungstermin in Sicht';
+      ? t.opensToday(next.from)
+      : t.opensOn(formatShortDay(next.date), next.from)
+    : t.noOpening;
 
   switch (status.mode) {
     case 'open':
-      return {
-        tone: 'success',
-        text: `Praxis geöffnet bis ${status.currentPeriod?.to ?? ''} Uhr`,
-      };
+      return { tone: 'success', text: t.openUntil(status.currentPeriod?.to ?? '') };
     case 'vacation':
-      return {
-        tone: 'warning',
-        text: `${status.closure?.title ?? 'Geschlossen'} · ${reopening}`,
-      };
+      return { tone: 'warning', text: `${status.closure?.title ?? t.closed} · ${reopening}` };
     case 'holiday':
-      return { tone: 'warning', text: `${status.holiday?.name ?? 'Feiertag'} · ${reopening}` };
+      return { tone: 'warning', text: `${status.holiday?.name ?? t.holiday} · ${reopening}` };
     default:
-      return { tone: 'danger', text: `Praxis geschlossen · ${reopening}` };
+      return { tone: 'danger', text: `${t.practiceClosed} · ${reopening}` };
   }
 }
 
@@ -42,7 +62,7 @@ export function StatusBar() {
   return (
     <footer className="statusbar">
       {opening && (
-        <span className="statusbar__item" title="Was der Assistent Anrufern gerade sagt">
+        <span className="statusbar__item" title={t.statusHint}>
           <span className={`dot dot--${opening.tone}`} />
           {opening.text}
         </span>
@@ -54,7 +74,7 @@ export function StatusBar() {
         </>
       )}
       <span className="statusbar__spacer" />
-      {loading && <span className="statusbar__item">Wird geladen …</span>}
+      {loading && <span className="statusbar__item">{t.loading}</span>}
       {me && (
         <span className="statusbar__item">
           {me.profile.name} · {me.role.name}

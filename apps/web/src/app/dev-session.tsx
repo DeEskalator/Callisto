@@ -1,10 +1,14 @@
 import { type ReactNode, useMemo, useState } from 'react';
+import { localized } from '../lib/i18n';
 import { type Session, SessionContext } from './session';
 
 // The demo users seeded by the local API server (services/api/src/dev/server.ts).
 const DEV_USERS = [
-  { id: 'dev-admin', label: 'Praxisleitung (Administration)' },
-  { id: 'dev-staff', label: 'Empfang (Praxisteam)' },
+  {
+    id: 'dev-admin',
+    label: localized({ de: 'Praxisleitung (Administration)', en: 'Practice manager (admin)' }),
+  },
+  { id: 'dev-staff', label: localized({ de: 'Empfang (Praxisteam)', en: 'Reception (staff)' }) },
 ];
 const STORAGE_KEY = 'callisto.dev-user';
 

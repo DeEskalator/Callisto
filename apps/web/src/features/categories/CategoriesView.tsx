@@ -5,12 +5,77 @@ import {
 } from '@callisto/domain';
 import { data, useApi } from '../../app/api';
 import { useConfig, useHasPermission, useInvalidatePlanning } from '../../app/queries';
+import { localized } from '../../lib/i18n';
 import { CollectionView } from '../../shell/CollectionView';
 import { ViewFrame } from '../../shell/ViewFrame';
 import type { GridColumn } from '../../ui/DataGrid';
 import { Checkbox, FormRow } from '../../ui/Form';
 import { FormDialog, useFormDialog } from '../../ui/FormDialog';
 import { QueryState } from '../../ui/QueryState';
+
+const t = localized({
+  de: {
+    title: 'Kategorien',
+    name: 'Name',
+    duration: 'Dauer',
+    purpose: 'Wofür',
+    templates: 'Vorlagen',
+    status: 'Status',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    noun: ['Kategorie', 'Kategorien'] as [string, string],
+    newCategory: 'Neue Kategorie …',
+    empty: 'Noch keine Kategorien',
+    emptyHint:
+      'Legen Sie für jede Art von Termin eine Kategorie an, zum Beispiel „Vorsorge“ oder „Blutabnahme“.',
+    minutesOf: (minutes: number) => `${minutes} Minuten`,
+    hint: 'Hinweis',
+    inactiveLong: 'Inaktiv, wird nicht vergeben',
+    none: 'Keine',
+    deleteText: (name: string) =>
+      `Soll die Kategorie „${name}“ gelöscht werden? Bereits gebuchte Termine bleiben bestehen.`,
+    editTitle: 'Kategorie bearbeiten',
+    newTitle: 'Neue Kategorie',
+    purposeHint:
+      'Beschreiben Sie, welche Anliegen in diese Kategorie gehören. Daran entscheidet der Assistent, welche Kategorie er einem Anrufer anbietet.',
+    minutes: 'Minuten',
+    patientHint:
+      'Wird dem Patienten nach der Buchung gesagt, zum Beispiel „Bitte kommen Sie nüchtern.“',
+    color: 'Farbe',
+    colorHint: 'Kennzeichnet die Kategorie im Kalender.',
+    activeLabel: 'Aktiv: Termine dieser Kategorie werden vergeben',
+  },
+  en: {
+    title: 'Categories',
+    name: 'Name',
+    duration: 'Duration',
+    purpose: 'Purpose',
+    templates: 'Templates',
+    status: 'Status',
+    active: 'Active',
+    inactive: 'Inactive',
+    noun: ['Category', 'categories'] as [string, string],
+    newCategory: 'New category …',
+    empty: 'No categories yet',
+    emptyHint:
+      'Create a category for every kind of appointment, for example “Check-up” or “Blood test”.',
+    minutesOf: (minutes: number) => `${minutes} minutes`,
+    hint: 'Hint',
+    inactiveLong: 'Inactive, not booked',
+    none: 'None',
+    deleteText: (name: string) =>
+      `Delete the category “${name}”? Appointments already booked remain.`,
+    editTitle: 'Edit category',
+    newTitle: 'New category',
+    purposeHint:
+      'Describe which concerns belong in this category. The assistant uses this to decide which category to offer a caller.',
+    minutes: 'minutes',
+    patientHint: 'Told to the patient after booking, for example “Please come fasting.”',
+    color: 'Colour',
+    colorHint: 'Marks the category in the calendar.',
+    activeLabel: 'Active: appointments of this category are booked',
+  },
+});
 
 export function CategoryName(props: { category: Pick<AppointmentCategory, 'name' | 'color'> }) {
   return (
@@ -30,7 +95,7 @@ export function CategoriesView() {
 
   if (!config.data) {
     return (
-      <ViewFrame title="Kategorien">
+      <ViewFrame title={t.title}>
         <QueryState query={config} />
       </ViewFrame>
     );
@@ -42,14 +107,14 @@ export function CategoriesView() {
   const columns: GridColumn<AppointmentCategory>[] = [
     {
       id: 'name',
-      header: 'Name',
+      header: t.name,
       width: 220,
       render: (category) => <CategoryName category={category} />,
       sortValue: (category) => category.name,
     },
     {
       id: 'duration',
-      header: 'Dauer',
+      header: t.duration,
       width: 90,
       align: 'right',
       render: (category) => `${category.durationMinutes} min`,
@@ -57,14 +122,14 @@ export function CategoriesView() {
     },
     {
       id: 'description',
-      header: 'Wofür',
+      header: t.purpose,
       width: 420,
       muted: true,
       render: (category) => category.description,
     },
     {
       id: 'templates',
-      header: 'Vorlagen',
+      header: t.templates,
       width: 90,
       align: 'right',
       render: (category) => templatesOf(category).length,
@@ -72,13 +137,13 @@ export function CategoriesView() {
     },
     {
       id: 'active',
-      header: 'Status',
+      header: t.status,
       width: 110,
       render: (category) =>
         category.active ? (
-          <span className="pill pill--success">Aktiv</span>
+          <span className="pill pill--success">{t.active}</span>
         ) : (
-          <span className="pill">Inaktiv</span>
+          <span className="pill">{t.inactive}</span>
         ),
       sortValue: (category) => category.active,
     },
@@ -86,51 +151,46 @@ export function CategoriesView() {
 
   return (
     <CollectionView
-      title="Kategorien"
-      noun={['Kategorie', 'Kategorien']}
+      title={t.title}
+      noun={t.noun}
       items={categories}
       itemId={(category) => category.id}
       itemName={(category) => category.name}
       columns={columns}
       initialSort={{ columnId: 'name', descending: false }}
       canManage={canManage}
-      newLabel="Neue Kategorie …"
+      newLabel={t.newCategory}
       onRefresh={() => void config.refetch()}
       empty={{
-        title: 'Noch keine Kategorien',
-        hint: 'Legen Sie für jede Art von Termin eine Kategorie an, zum Beispiel „Vorsorge“ oder „Blutabnahme“.',
+        title: t.empty,
+        hint: t.emptyHint,
       }}
       details={(category) => (
         <dl className="props">
-          <dt>Name</dt>
+          <dt>{t.name}</dt>
           <dd>
             <CategoryName category={category} />
           </dd>
-          <dt>Dauer</dt>
-          <dd>{category.durationMinutes} Minuten</dd>
-          <dt>Wofür</dt>
+          <dt>{t.duration}</dt>
+          <dd>{t.minutesOf(category.durationMinutes)}</dd>
+          <dt>{t.purpose}</dt>
           <dd>{category.description || '–'}</dd>
-          <dt>Hinweis</dt>
+          <dt>{t.hint}</dt>
           <dd>{category.patientHint ?? '–'}</dd>
-          <dt>Status</dt>
-          <dd>{category.active ? 'Aktiv' : 'Inaktiv, wird nicht vergeben'}</dd>
-          <dt>Vorlagen</dt>
+          <dt>{t.status}</dt>
+          <dd>{category.active ? t.active : t.inactiveLong}</dd>
+          <dt>{t.templates}</dt>
           <dd>
             {templatesOf(category)
               .map((template) => template.name)
-              .join(', ') || 'Keine'}
+              .join(', ') || t.none}
           </dd>
         </dl>
       )}
       dialog={({ item, close, saved }) => (
         <CategoryDialog category={item} onClose={close} onSaved={saved} />
       )}
-      deleteText={(category) => (
-        <>
-          Soll die Kategorie „{category.name}“ gelöscht werden? Bereits gebuchte Termine bleiben
-          bestehen.
-        </>
-      )}
+      deleteText={(category) => t.deleteText(category.name)}
       onDelete={async (category) => {
         await api.admin.categories[':id'].$delete({ param: { id: category.id } });
         await invalidate();
@@ -169,12 +229,8 @@ function CategoryDialog(props: {
   const { draft, errors, set } = form;
 
   return (
-    <FormDialog
-      title={category ? 'Kategorie bearbeiten' : 'Neue Kategorie'}
-      form={form}
-      onClose={props.onClose}
-    >
-      <FormRow label="Name" error={errors.name}>
+    <FormDialog title={category ? t.editTitle : t.newTitle} form={form} onClose={props.onClose}>
+      <FormRow label={t.name} error={errors.name}>
         {(id) => (
           <input
             id={id}
@@ -187,11 +243,7 @@ function CategoryDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow
-        label="Wofür"
-        error={errors.description}
-        hint="Beschreiben Sie, welche Anliegen in diese Kategorie gehören. Daran entscheidet der Assistent, welche Kategorie er einem Anrufer anbietet."
-      >
+      <FormRow label={t.purpose} error={errors.description} hint={t.purposeHint}>
         {(id) => (
           <textarea
             id={id}
@@ -202,7 +254,7 @@ function CategoryDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Dauer" error={errors.durationMinutes}>
+      <FormRow label={t.duration} error={errors.durationMinutes}>
         {(id) => (
           <div className="form__row">
             <input
@@ -216,15 +268,11 @@ function CategoryDialog(props: {
               aria-invalid={Boolean(errors.durationMinutes)}
               onChange={(event) => set({ durationMinutes: event.target.valueAsNumber })}
             />
-            Minuten
+            {t.minutes}
           </div>
         )}
       </FormRow>
-      <FormRow
-        label="Hinweis"
-        error={errors.patientHint}
-        hint="Wird dem Patienten nach der Buchung gesagt, zum Beispiel „Bitte kommen Sie nüchtern.“"
-      >
+      <FormRow label={t.hint} error={errors.patientHint} hint={t.patientHint}>
         {(id) => (
           <input
             id={id}
@@ -234,7 +282,7 @@ function CategoryDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Farbe" error={errors.color} hint="Kennzeichnet die Kategorie im Kalender.">
+      <FormRow label={t.color} error={errors.color} hint={t.colorHint}>
         {(id) => (
           <input
             id={id}
@@ -245,10 +293,10 @@ function CategoryDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Status">
+      <FormRow label={t.status}>
         {() => (
           <Checkbox
-            label="Aktiv: Termine dieser Kategorie werden vergeben"
+            label={t.activeLabel}
             checked={draft.active}
             onChange={(active) => set({ active })}
           />

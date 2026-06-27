@@ -1,3 +1,5 @@
+import { localized } from './i18n';
+
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
 /** A keyboard shortcut. `alt` is used instead of Ctrl/Cmd, which browsers reserve for themselves. */
@@ -8,7 +10,7 @@ export interface Shortcut {
 }
 
 const KEY_LABELS: Record<string, string> = {
-  Delete: isMac ? '⌫' : 'Entf',
+  Delete: isMac ? '⌫' : localized({ de: 'Entf', en: 'Del' }),
   Enter: isMac ? '↩' : 'Enter',
   Escape: 'Esc',
 };
@@ -19,7 +21,11 @@ export function shortcutLabel(shortcut: Shortcut): string {
   if (isMac) {
     return `${shortcut.alt ? '⌥' : ''}${shortcut.shift ? '⇧' : ''}${key}`;
   }
-  return [shortcut.alt ? 'Alt' : '', shortcut.shift ? 'Umschalt' : '', key]
+  return [
+    shortcut.alt ? 'Alt' : '',
+    shortcut.shift ? localized({ de: 'Umschalt', en: 'Shift' }) : '',
+    key,
+  ]
     .filter(Boolean)
     .join('+');
 }

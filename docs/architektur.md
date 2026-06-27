@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: April 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
+Stand: Juni 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
 
 ## Grundidee
 
@@ -76,6 +76,8 @@ Cognito beantwortet nur die Frage, wer angemeldet ist. Was jemand darf, steht in
 Das Hauptfenster ist das Tagesgeschehen: **Anliegen** (die Arbeitsliste der Praxis: Termine, Rezeptwünsche, Rückrufe, durchgestellte Anliegen) und **Anrufe** eines Tages, jeweils mit dem Gesprächsverlauf im Detailbereich. Alles, was selten geändert wird, liegt in einem **Einstellungs-Sheet**, das sich über das Tagesgeschehen legt (Menüleiste „Einstellungen“ oder Alt+Komma, schließen mit Esc). Der **Testanruf** (Menüleiste „Testanruf“) führt ein Gespräch per Text oder Mikrofon über dieselbe Sitzung wie ein Telefonanruf; was dabei entsteht, ist als Test gekennzeichnet.
 
 Jede Ansicht beschreibt ihre Befehle einmal; Symbolleiste, Menüleiste, Kontextmenü und Tastenkürzel werden daraus erzeugt (`apps/web/src/shell/commands.ts`).
+
+Die Oberfläche gibt es auf Deutsch und Englisch; umgeschaltet wird unter Ansicht → Sprache, ohne Auswahl gilt die Sprache des Browsers. Jede Datei hält ihre Texte in beiden Sprachen nebeneinander (`localized` in `apps/web/src/lib/i18n.ts`); fehlt eine Übersetzung, schlägt die Typprüfung fehl. Was nicht zur Oberfläche gehört, bleibt deutsch: die Ansagen und Gespräche des Assistenten, die Meldungen der API und die Inhalte der Praxis.
 
 ## Live-Aktualisierung
 

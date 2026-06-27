@@ -1,6 +1,12 @@
 import { X } from 'lucide-react';
 import { AlertDialog, Dialog } from 'radix-ui';
 import type { FormEvent, ReactNode } from 'react';
+import { localized } from '../lib/i18n';
+
+const t = localized({
+  de: { close: 'Schließen', cancel: 'Abbrechen' },
+  en: { close: 'Close', cancel: 'Cancel' },
+});
 
 /**
  * A modal dialog with title bar, scrolling body and a footer for the buttons. The body sits in
@@ -34,7 +40,7 @@ export function Modal(props: {
             <header className="dialog__header">
               <Dialog.Title className="dialog__title">{props.title}</Dialog.Title>
               <Dialog.Close asChild>
-                <button type="button" className="btn btn--ghost btn--icon" aria-label="Schließen">
+                <button type="button" className="btn btn--ghost btn--icon" aria-label={t.close}>
                   <X />
                 </button>
               </Dialog.Close>
@@ -87,7 +93,7 @@ export function ConfirmDialog(props: {
             )}
             <AlertDialog.Cancel asChild>
               <button type="button" className="btn">
-                Abbrechen
+                {t.cancel}
               </button>
             </AlertDialog.Cancel>
             <button

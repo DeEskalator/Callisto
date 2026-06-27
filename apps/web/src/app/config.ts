@@ -1,3 +1,5 @@
+import { localized } from '../lib/i18n';
+
 export interface OidcSettings {
   /** OIDC issuer of the Cognito user pool. */
   authority: string;
@@ -28,13 +30,23 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   }
   const response = await fetch('/config.json', { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`config.json konnte nicht geladen werden (${response.status})`);
+    throw new Error(
+      localized({
+        de: `config.json konnte nicht geladen werden (${response.status})`,
+        en: `config.json could not be loaded (${response.status})`,
+      }),
+    );
   }
   const config: RuntimeConfig = await response.json();
   // Empty means: the API is reached through the app's own address.
   config.apiUrl ||= window.location.origin;
   if (config.auth.mode !== 'oidc') {
-    throw new Error('Die Anmeldung ist für diese Umgebung nicht konfiguriert');
+    throw new Error(
+      localized({
+        de: 'Die Anmeldung ist für diese Umgebung nicht konfiguriert',
+        en: 'Sign-in is not configured for this environment',
+      }),
+    );
   }
   return config;
 }

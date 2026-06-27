@@ -12,6 +12,7 @@ import { ApiContext, ApiError, createApiClient } from './app/api';
 import { loadRuntimeConfig, type RuntimeConfig } from './app/config';
 import { router } from './app/router';
 import { OidcSessionProvider, useSession } from './app/session';
+import { localized } from './lib/i18n';
 import { initTheme } from './lib/theme';
 import { Splash } from './shell/Splash';
 import { ToastProvider } from './ui/Toast';
@@ -20,6 +21,19 @@ import { ToastProvider } from './ui/Toast';
 const DevSessionProvider = import.meta.env.DEV
   ? lazy(async () => ({ default: (await import('./app/dev-session')).DevSessionProvider }))
   : undefined;
+
+const t = localized({
+  de: {
+    noSignIn: 'Die Anmeldung ist für diese Umgebung nicht konfiguriert',
+    cannotStart: 'Callisto kann nicht gestartet werden',
+    retry: 'Erneut versuchen',
+  },
+  en: {
+    noSignIn: 'Sign-in is not configured for this environment',
+    cannotStart: 'Callisto cannot be started',
+    retry: 'Try again',
+  },
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +54,7 @@ function SessionProvider(props: { config: RuntimeConfig; children: ReactNode }) 
   if (DevSessionProvider) {
     return <DevSessionProvider>{props.children}</DevSessionProvider>;
   }
-  return <Splash title="Die Anmeldung ist für diese Umgebung nicht konfiguriert" />;
+  return <Splash title={t.noSignIn} />;
 }
 
 function ApiProvider(props: { apiUrl: string; children: ReactNode }) {
@@ -79,9 +93,9 @@ try {
 } catch (error) {
   root.render(
     <Splash
-      title="Callisto kann nicht gestartet werden"
+      title={t.cannotStart}
       text={error instanceof Error ? error.message : undefined}
-      action={{ label: 'Erneut versuchen', run: () => window.location.reload() }}
+      action={{ label: t.retry, run: () => window.location.reload() }}
     />,
   );
 }

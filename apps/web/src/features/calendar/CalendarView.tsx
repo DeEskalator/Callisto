@@ -18,6 +18,7 @@ import { type CSSProperties, useState } from 'react';
 import { data, errorMessage, useApi } from '../../app/api';
 import { queryKeys, useConfig, useConflicts, useHasPermission } from '../../app/queries';
 import { formatLongDate, formatShortDay } from '../../lib/format';
+import { localized } from '../../lib/i18n';
 import { type Command, newCommand, refreshCommand } from '../../shell/commands';
 import { ViewFrame } from '../../shell/ViewFrame';
 import { FormRow } from '../../ui/Form';
@@ -27,11 +28,101 @@ import { ConfirmDialog } from '../../ui/Modal';
 import { QueryState } from '../../ui/QueryState';
 import { useNotify } from '../../ui/Toast';
 
-const STATUS_LABELS: Record<Slot['status'], string> = {
-  free: 'Frei',
-  booked: 'Gebucht',
-  blocked: 'Gesperrt',
-};
+const t = localized({
+  de: {
+    statuses: { free: 'Frei', booked: 'Gebucht', blocked: 'Gesperrt' },
+    notChanged: 'Der Slot wurde nicht geändert',
+    reconciled: 'Die Slots wurden neu erzeugt',
+    reconcileText: (created: number, updated: number, removed: number) =>
+      `${created} angelegt, ${updated} angepasst, ${removed} entfernt.`,
+    notReconciled: 'Die Slots wurden nicht neu erzeugt',
+    title: 'Kalender',
+    unblock: 'Freigeben',
+    block: 'Sperren',
+    delete: 'Löschen …',
+    single: 'Einzelner Slot …',
+    reconcile: 'Slots neu erzeugen',
+    status: (total: number, booked: number, blocked: number) =>
+      `${total} Slots · ${booked} gebucht · ${blocked} gesperrt`,
+    // The short day ends with a dot ("So., 22.11."), so the year follows directly.
+    period: (from: string, to: string, year: string, week: number) =>
+      `${from} – ${to}${year} · KW ${week}`,
+    previousWeek: 'Vorherige Woche',
+    today: 'Heute',
+    nextWeek: 'Nächste Woche',
+    details: 'Details',
+    category: 'Kategorie',
+    deletedCategory: 'Gelöschte Kategorie',
+    date: 'Datum',
+    time: 'Zeit',
+    timeRange: (from: string, to: string) => `${from} – ${to} Uhr`,
+    state: 'Status',
+    origin: 'Herkunft',
+    fromTemplate: (name: string) => `Vorlage „${name}“`,
+    deleted: 'gelöscht',
+    manual: 'Einzeln angelegt',
+    hint: 'Hinweis',
+    conflict:
+      'Der Termin liegt in einer Schließzeit oder an einem Feiertag. Bitte nehmen Sie Kontakt mit dem Patienten auf.',
+    nothingSelected: 'Kein Slot ausgewählt',
+    noSlots: 'Keine Slots',
+    deleteTitle: 'Slot löschen',
+    deleteText: (date: string, time: string) =>
+      `Soll der einzeln angelegte Slot am ${date} um ${time} Uhr gelöscht werden?`,
+    confirmDelete: 'Löschen',
+    free: (count: number) => `${count} frei`,
+    createTitle: 'Einzelnen Slot anlegen',
+    start: 'Beginn',
+    oClock: 'Uhr',
+  },
+  en: {
+    statuses: { free: 'Free', booked: 'Booked', blocked: 'Blocked' },
+    notChanged: 'The slot was not changed',
+    reconciled: 'The slots were generated again',
+    reconcileText: (created: number, updated: number, removed: number) =>
+      `${created} created, ${updated} updated, ${removed} removed.`,
+    notReconciled: 'The slots were not generated again',
+    title: 'Calendar',
+    unblock: 'Unblock',
+    block: 'Block',
+    delete: 'Delete …',
+    single: 'Single slot …',
+    reconcile: 'Generate slots again',
+    status: (total: number, booked: number, blocked: number) =>
+      `${total} slots · ${booked} booked · ${blocked} blocked`,
+    period: (from: string, to: string, year: string, week: number) =>
+      `${from} – ${to}/${year} · Week ${week}`,
+    previousWeek: 'Previous week',
+    today: 'Today',
+    nextWeek: 'Next week',
+    details: 'Details',
+    category: 'Category',
+    deletedCategory: 'Deleted category',
+    date: 'Date',
+    time: 'Time',
+    timeRange: (from: string, to: string) => `${from} – ${to}`,
+    state: 'Status',
+    origin: 'Origin',
+    fromTemplate: (name: string) => `Template “${name}”`,
+    deleted: 'deleted',
+    manual: 'Created individually',
+    hint: 'Note',
+    conflict:
+      'The appointment falls into a closure or onto a public holiday. Please get in touch with the patient.',
+    nothingSelected: 'No slot selected',
+    noSlots: 'No slots',
+    deleteTitle: 'Delete slot',
+    deleteText: (date: string, time: string) =>
+      `Delete the individually created slot on ${date} at ${time}?`,
+    confirmDelete: 'Delete',
+    free: (count: number) => `${count} free`,
+    createTitle: 'Create a single slot',
+    start: 'Start',
+    oClock: '',
+  },
+});
+
+const STATUS_LABELS: Record<Slot['status'], string> = t.statuses;
 
 /** The Monday of the week a date falls into. */
 const mondayOf = (date: string) => addDays(date, -WEEKDAYS.indexOf(weekdayOf(date)));
@@ -76,7 +167,7 @@ export function CalendarView() {
         json: { status: change.status },
       }),
     onSuccess: refreshSlots,
-    onError: failed('Der Slot wurde nicht geändert'),
+    onError: failed(t.notChanged),
   });
   const remove = useMutation({
     mutationFn: (slot: Slot) => api.admin.slots[':id'].$delete({ param: { id: slot.id } }),
@@ -91,16 +182,16 @@ export function CalendarView() {
       await refreshSlots();
       notify({
         kind: 'success',
-        title: 'Die Slots wurden neu erzeugt',
-        text: `${changes.created} angelegt, ${changes.updated} angepasst, ${changes.removed} entfernt.`,
+        title: t.reconciled,
+        text: t.reconcileText(changes.created, changes.updated, changes.removed),
       });
     },
-    onError: failed('Die Slots wurden nicht neu erzeugt'),
+    onError: failed(t.notReconciled),
   });
 
   if (!config.data || !slots.data) {
     return (
-      <ViewFrame title="Kalender">
+      <ViewFrame title={t.title}>
         <QueryState query={config.data ? slots : config} />
       </ViewFrame>
     );
@@ -114,7 +205,7 @@ export function CalendarView() {
   const actionsFor = (slot: Slot | undefined): Command[] => [
     {
       id: 'block',
-      label: slot?.status === 'blocked' ? 'Freigeben' : 'Sperren',
+      label: slot?.status === 'blocked' ? t.unblock : t.block,
       icon: slot?.status === 'blocked' ? LockOpen : Lock,
       disabled: !slot || slot.status === 'booked' || !canManage,
       run: () =>
@@ -122,7 +213,7 @@ export function CalendarView() {
     },
     {
       id: 'delete',
-      label: 'Löschen …',
+      label: t.delete,
       icon: Trash2,
       danger: true,
       // Slots of a template would simply be generated again; they are blocked instead.
@@ -132,11 +223,11 @@ export function CalendarView() {
   ];
 
   const commands: Command[] = [
-    newCommand('Einzelner Slot …', () => setCreating(true), !canManage || categories.length === 0),
+    newCommand(t.single, () => setCreating(true), !canManage || categories.length === 0),
     ...actionsFor(selected),
     {
       id: 'reconcile',
-      label: 'Slots neu erzeugen',
+      label: t.reconcile,
       icon: Sparkles,
       toolbar: false,
       disabled: !canManage || reconcile.isPending,
@@ -156,7 +247,7 @@ export function CalendarView() {
       }))
     : [
         {
-          label: 'Einzelner Slot …',
+          label: t.single,
           icon: Plus,
           disabled: !canManage,
           onSelect: () => setCreating(true),
@@ -173,32 +264,36 @@ export function CalendarView() {
 
   return (
     <ViewFrame
-      title="Kalender"
+      title={t.title}
       commands={commands}
-      status={`${slots.data.length} Slots · ${booked} gebucht · ${blocked} gesperrt`}
+      status={t.status(slots.data.length, booked, blocked)}
       toolbarEnd={
         <div className="toolbar__nav">
           <span className="toolbar__period">
-            {formatShortDay(weekStart)} – {formatShortDay(weekEnd)}
-            {weekEnd.slice(0, 4)} · KW {isoWeek(weekStart)}
+            {t.period(
+              formatShortDay(weekStart),
+              formatShortDay(weekEnd),
+              weekEnd.slice(0, 4),
+              isoWeek(weekStart),
+            )}
           </span>
           <button
             type="button"
             className="btn btn--icon"
-            aria-label="Vorherige Woche"
-            title="Vorherige Woche"
+            aria-label={t.previousWeek}
+            title={t.previousWeek}
             onClick={() => setWeekStart(addDays(weekStart, -7))}
           >
             <ChevronLeft />
           </button>
           <button type="button" className="btn" onClick={() => setWeekStart(mondayOf(today))}>
-            Heute
+            {t.today}
           </button>
           <button
             type="button"
             className="btn btn--icon"
-            aria-label="Nächste Woche"
-            title="Nächste Woche"
+            aria-label={t.nextWeek}
+            title={t.nextWeek}
             onClick={() => setWeekStart(addDays(weekStart, 7))}
           >
             <ChevronRight />
@@ -206,37 +301,35 @@ export function CalendarView() {
         </div>
       }
       inspector={{
-        title: 'Details',
+        title: t.details,
         content: selected ? (
           <dl className="props">
-            <dt>Kategorie</dt>
-            <dd>{categoryOf(selected)?.name ?? 'Gelöschte Kategorie'}</dd>
-            <dt>Datum</dt>
+            <dt>{t.category}</dt>
+            <dd>{categoryOf(selected)?.name ?? t.deletedCategory}</dd>
+            <dt>{t.date}</dt>
             <dd>{formatLongDate(selected.date)}</dd>
-            <dt>Zeit</dt>
-            <dd>
-              {selected.startTime} – {selected.endTime} Uhr
-            </dd>
-            <dt>Status</dt>
+            <dt>{t.time}</dt>
+            <dd>{t.timeRange(selected.startTime, selected.endTime)}</dd>
+            <dt>{t.state}</dt>
             <dd>{STATUS_LABELS[selected.status]}</dd>
-            <dt>Herkunft</dt>
+            <dt>{t.origin}</dt>
             <dd>
               {selected.templateId
-                ? `Vorlage „${templates.find((template) => template.id === selected.templateId)?.name ?? 'gelöscht'}“`
-                : 'Einzeln angelegt'}
+                ? t.fromTemplate(
+                    templates.find((template) => template.id === selected.templateId)?.name ??
+                      t.deleted,
+                  )
+                : t.manual}
             </dd>
             {conflictIds.has(selected.id) && (
               <>
-                <dt>Hinweis</dt>
-                <dd>
-                  Der Termin liegt in einer Schließzeit oder an einem Feiertag. Bitte nehmen Sie
-                  Kontakt mit dem Patienten auf.
-                </dd>
+                <dt>{t.hint}</dt>
+                <dd>{t.conflict}</dd>
               </>
             )}
           </dl>
         ) : (
-          <div className="inspector__empty">Kein Slot ausgewählt</div>
+          <div className="inspector__empty">{t.nothingSelected}</div>
         ),
       }}
     >
@@ -289,7 +382,7 @@ export function CalendarView() {
                         conflict={conflictIds.has(slot.id)}
                       />
                     ))}
-                    {daySlots.length === 0 && <span className="week__empty">Keine Slots</span>}
+                    {daySlots.length === 0 && <span className="week__empty">{t.noSlots}</span>}
                   </div>
                 </section>
               );
@@ -316,14 +409,9 @@ export function CalendarView() {
       )}
       {deleting && (
         <ConfirmDialog
-          title="Slot löschen"
-          text={
-            <>
-              Soll der einzeln angelegte Slot am {formatLongDate(deleting.date)} um{' '}
-              {deleting.startTime} Uhr gelöscht werden?
-            </>
-          }
-          confirmLabel="Löschen"
+          title={t.deleteTitle}
+          text={t.deleteText(formatLongDate(deleting.date), deleting.startTime)}
+          confirmLabel={t.confirmDelete}
           danger
           busy={remove.isPending}
           error={remove.isError ? errorMessage(remove.error) : undefined}
@@ -381,12 +469,12 @@ function SlotChip(props: {
       data-conflict={props.conflict}
       aria-pressed={props.selected}
       style={{ '--slot-color': category?.color ?? 'var(--text-faint)' } as CSSProperties}
-      title={`${slot.startTime} – ${slot.endTime} Uhr · ${category?.name ?? ''} · ${STATUS_LABELS[slot.status]}`}
+      title={`${t.timeRange(slot.startTime, slot.endTime)} · ${category?.name ?? ''} · ${STATUS_LABELS[slot.status]}`}
     >
       <span className="slot__time">{slot.startTime}</span>
       <span className="slot__name">{category?.name ?? '–'}</span>
       {slot.status !== 'free' && <span className="slot__status">{STATUS_LABELS[slot.status]}</span>}
-      {props.free > 1 && <span className="slot__count">{props.free} frei</span>}
+      {props.free > 1 && <span className="slot__count">{t.free(props.free)}</span>}
     </button>
   );
 }
@@ -411,8 +499,8 @@ function ManualSlotDialog(props: {
   const { draft, errors, set } = form;
 
   return (
-    <FormDialog title="Einzelnen Slot anlegen" size="narrow" form={form} onClose={props.onClose}>
-      <FormRow label="Kategorie" error={errors.categoryId}>
+    <FormDialog title={t.createTitle} size="narrow" form={form} onClose={props.onClose}>
+      <FormRow label={t.category} error={errors.categoryId}>
         {(id) => (
           <select
             id={id}
@@ -430,7 +518,7 @@ function ManualSlotDialog(props: {
           </select>
         )}
       </FormRow>
-      <FormRow label="Datum" error={errors.date}>
+      <FormRow label={t.date} error={errors.date}>
         {(id) => (
           <input
             id={id}
@@ -441,7 +529,7 @@ function ManualSlotDialog(props: {
           />
         )}
       </FormRow>
-      <FormRow label="Beginn" error={errors.startTime}>
+      <FormRow label={t.start} error={errors.startTime}>
         {(id) => (
           <div className="form__row">
             <input
@@ -451,7 +539,7 @@ function ManualSlotDialog(props: {
               value={draft.startTime}
               onChange={(event) => set({ startTime: event.target.value })}
             />
-            Uhr
+            {t.oClock}
           </div>
         )}
       </FormRow>

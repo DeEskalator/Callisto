@@ -1,6 +1,24 @@
 import { type LucideIcon, Pencil, Plus, RefreshCw, Save, Trash2, Undo2 } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
+import { localized } from '../lib/i18n';
 import type { Shortcut } from '../lib/platform';
+
+const t = localized({
+  de: {
+    edit: 'Bearbeiten …',
+    delete: 'Löschen …',
+    refresh: 'Aktualisieren',
+    save: 'Speichern',
+    discard: 'Änderungen verwerfen',
+  },
+  en: {
+    edit: 'Edit …',
+    delete: 'Delete …',
+    refresh: 'Refresh',
+    save: 'Save',
+    discard: 'Discard changes',
+  },
+});
 
 /**
  * Something the user can do in the current view. A view declares its commands once; the toolbar,
@@ -31,7 +49,7 @@ export const newCommand = (label: string, run: () => void, disabled = false): Co
 
 export const editCommand = (run: () => void, disabled: boolean): Command => ({
   id: 'edit',
-  label: 'Bearbeiten …',
+  label: t.edit,
   icon: Pencil,
   shortcut: { key: 'Enter' },
   disabled,
@@ -40,7 +58,7 @@ export const editCommand = (run: () => void, disabled: boolean): Command => ({
 
 export const deleteCommand = (run: () => void, disabled: boolean): Command => ({
   id: 'delete',
-  label: 'Löschen …',
+  label: t.delete,
   icon: Trash2,
   shortcut: { key: 'Delete' },
   disabled,
@@ -50,7 +68,7 @@ export const deleteCommand = (run: () => void, disabled: boolean): Command => ({
 
 export const refreshCommand = (run: () => void): Command => ({
   id: 'refresh',
-  label: 'Aktualisieren',
+  label: t.refresh,
   icon: RefreshCw,
   shortcut: { key: 'r', alt: true },
   run,
@@ -60,7 +78,7 @@ export const refreshCommand = (run: () => void): Command => ({
 
 export const saveCommand = (run: () => void, disabled: boolean): Command => ({
   id: 'save',
-  label: 'Speichern',
+  label: t.save,
   icon: Save,
   shortcut: { key: 's', alt: true },
   disabled,
@@ -69,7 +87,7 @@ export const saveCommand = (run: () => void, disabled: boolean): Command => ({
 
 export const discardCommand = (run: () => void, disabled: boolean): Command => ({
   id: 'discard',
-  label: 'Änderungen verwerfen',
+  label: t.discard,
   icon: Undo2,
   disabled,
   run,
@@ -79,7 +97,7 @@ export const discardCommand = (run: () => void, disabled: boolean): Command => (
 export interface ViewInfo {
   title: string;
   commands: Command[];
-  /** Text for the status bar, e.g. "12 Einträge". */
+  /** Text for the status bar, e.g. "12 entries". */
   status?: string | undefined;
 }
 
