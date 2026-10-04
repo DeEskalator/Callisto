@@ -7,7 +7,7 @@ import {
   SlotRepository,
   UserRepository,
 } from '@callisto/data';
-import { handle } from 'hono/aws-lambda';
+import { handle } from '@hono/aws-lambda';
 import { requireEnv } from '../lib/app';
 import { createCallsApp } from './app';
 

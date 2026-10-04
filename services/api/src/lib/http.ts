@@ -1,7 +1,7 @@
 import type { Role, UserProfile } from '@callisto/domain';
+import type { LambdaContext, LambdaEvent } from '@hono/aws-lambda';
 import { zValidator } from '@hono/zod-validator';
 import type { Context } from 'hono';
-import type { LambdaContext, LambdaEvent } from 'hono/aws-lambda';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { z } from 'zod';
 
