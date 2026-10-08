@@ -9,7 +9,7 @@ Diese Anleitung führt vom leeren AWS-Konto bis zum ersten Testanruf. Eine eigen
 | Node.js 24 oder neuer                      | Bauen und Ausrollen                                        | `node --version`                                 |
 | AWS CLI mit einem Profil für das Zielkonto | Zugang zu AWS                                              | `aws sts get-caller-identity --profile <profil>` |
 | Docker (läuft)                             | Container-Image des Sprachagenten; nur mit `"voice": true` | `docker info`                                    |
-| Nova 2 Sonic freigeschaltet                | Der Sprachagent; nur mit `"voice": true`                   | Bedrock-Konsole, Region Stockholm (`eu-north-1`) |
+| Nova 2.5 Sonic freigeschaltet              | Der Sprachagent; nur mit `"voice": true`                   | Bedrock-Konsole, Region Stockholm (`eu-north-1`) |
 
 Ein AWS-Profil richtest du z. B. mit `aws configure sso` oder `aws configure` ein.
 
@@ -121,5 +121,5 @@ Wie man die Nummer bekommt und die Praxis umleitet: [konfiguration.md, „Telefo
 | `Cannot connect to the Docker daemon`               | Docker starten (nur mit `"voice": true` nötig).                                                                  |
 | `has not been bootstrapped`                         | Schritt 3 ausführen.                                                                                             |
 | Testanruf: „Der Testmodus ist nicht eingerichtet“   | `"voice": true` fehlt in der Konfiguration.                                                                      |
-| Testanruf: keine Antwort, Sprachagent startet nicht | Nova 2 Sonic in Stockholm nicht freigeschaltet; Protokoll in CloudWatch unter der Log-Gruppe des Voice-Stacks.   |
+| Testanruf: keine Antwort, Sprachagent startet nicht | Nova 2.5 Sonic in Stockholm nicht freigeschaltet; Protokoll in CloudWatch unter der Log-Gruppe des Voice-Stacks. |
 | Keine Einladungs-E-Mail                             | Spam-Ordner prüfen. Cognito versendet ohne eigene E-Mail-Konfiguration höchstens 50 E-Mails am Tag.              |

@@ -1,10 +1,10 @@
 # Architektur
 
-Stand: Juni 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
+Stand: Oktober 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
 
 ## Grundidee
 
-Ein eigener Sprachagent führt das Gespräch mit Amazon Nova 2 Sonic, einem Speech-to-Speech-Modell auf Amazon Bedrock. Telefon, Sprachtest im Browser und Texteingabe sind drei Eingänge in denselben Agenten. Der Testmodus verhält sich deshalb wie ein echter Anruf und braucht keine Telefonnummer. Alles außer dem Agenten ist serverless und kostet im Leerlauf fast nichts.
+Ein eigener Sprachagent führt das Gespräch mit Amazon Nova 2.5 Sonic, einem Speech-to-Speech-Modell auf Amazon Bedrock. Telefon, Sprachtest im Browser und Texteingabe sind drei Eingänge in denselben Agenten. Der Testmodus verhält sich deshalb wie ein echter Anruf und braucht keine Telefonnummer. Alles außer dem Agenten ist serverless und kostet im Leerlauf fast nichts.
 
 ```
 Telefon
@@ -14,7 +14,7 @@ Telefon
                                                                             ▼
 Testanruf
   Browser ─► CloudFront /voice ─► ALB (privat) ───────────────────────► Sprachagent (ECS Fargate)
-                                                                            │ ◄─► Nova 2 Sonic und Polly (Bedrock, Stockholm)
+                                                                            │ ◄─► Nova 2.5 Sonic und Polly (Bedrock, Stockholm)
                                                                             │ Werkzeuge, Transkript
                                                                             ▼
 Weboberfläche
@@ -37,7 +37,7 @@ Weboberfläche
 
 | Bereich       | Wahl                                                                           | Grund                                                                                                                                |
 | ------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Sprachmodell  | Nova 2 Sonic, Bedrock in Stockholm                                             | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                                 |
+| Sprachmodell  | Nova 2.5 Sonic, Bedrock in Stockholm                                           | Deutsche Stimmen, Werkzeugaufrufe und Texteingabe in einem Modell; einzige EU-Region                                                 |
 | Agent         | ECS Fargate hinter einem privaten Load Balancer, erreichbar über CloudFront    | Ein Gespräch ist ein langlebiger Audiostrom, den Lambda nicht halten kann; TLS kommt von CloudFront, daher keine eigene Domain nötig |
 | Telefonie     | Chime SDK (Nummer, SIP Media Application, Voice Connector); SIP/RTP im Agenten | Kein eigener Telefonie-Server nötig; verbindet zur Praxis auch, wenn der Agent ausfällt                                              |
 | API           | API Gateway (REST) und Lambda (TypeScript, Hono)                               | Token- und Scope-Prüfung am Gateway, Usage Plans für Integrationen                                                                   |

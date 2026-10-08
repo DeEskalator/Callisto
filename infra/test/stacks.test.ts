@@ -277,7 +277,7 @@ describe('voice stack', () => {
     const { voice } = synth({ voice: true });
     const policies = JSON.stringify(voice?.findResources('AWS::IAM::Policy'));
     expect(policies).toContain('"bedrock:InvokeModel"');
-    expect(policies).toContain('bedrock:eu-north-1::foundation-model/amazon.nova-2-sonic-v1:0');
+    expect(policies).toContain('bedrock:eu-north-1::foundation-model/amazon.nova-2-5-sonic');
   });
 
   it('tells the API where test conversations are held', () => {

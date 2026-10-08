@@ -20,7 +20,7 @@ export interface VoiceStackProps extends StackProps {
 
 /** Nova Sonic is offered in Europe only in Stockholm; the agent calls it there. */
 export const BEDROCK_REGION = 'eu-north-1';
-export const NOVA_SONIC_MODEL_ID = 'amazon.nova-2-sonic-v1:0';
+export const NOVA_SONIC_MODEL_ID = 'amazon.nova-2-5-sonic';
 /** Path of test conversations, on the app's own address (see the web stack). */
 export const VOICE_PATH = '/voice';
 

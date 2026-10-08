@@ -16,7 +16,7 @@ export interface NovaSonicOptions {
 
 export const NOVA_SONIC_DEFAULTS: NovaSonicOptions = {
   region: 'eu-north-1',
-  modelId: 'amazon.nova-2-sonic-v1:0',
+  modelId: 'amazon.nova-2-5-sonic',
   voiceId: 'tina',
 };
 

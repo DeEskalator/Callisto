@@ -98,7 +98,7 @@ Die Adresse der Weboberfläche steht nach dem Ausrollen in der Ausgabe `AppUrl` 
 
 ## Nova Sonic freischalten
 
-Der Sprachagent ruft Amazon Nova 2 Sonic in Stockholm (`eu-north-1`) auf, der einzigen EU-Region des Modells. Der Modellzugriff muss dort einmalig in der Bedrock-Konsole aktiviert werden.
+Der Sprachagent ruft Amazon Nova 2.5 Sonic in Stockholm (`eu-north-1`) auf, der einzigen EU-Region des Modells. Der Modellzugriff muss dort einmalig in der Bedrock-Konsole aktiviert werden.
 
 ## Telefonie einschalten
 
