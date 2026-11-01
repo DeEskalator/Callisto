@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "aws-cdk": "^2.1144.0",
-    "cdk-nag": "^3.0.2",
     "esbuild": "^0.28.2"
   }
 }

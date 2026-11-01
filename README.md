@@ -23,63 +23,63 @@ Alles ist TypeScript in npm-Workspaces. Patientendaten liegen in Frankfurt (`eu-
 
 **Weboberfläche**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| React, Vite | Single-Page-App, Entwicklungsserver und Build | `apps/web/src/main.tsx`, `apps/web/vite.config.ts` |
-| TanStack Router | Ansichten und Adressen, auch für das Einstellungs-Sheet | `apps/web/src/app/router.tsx` |
-| TanStack Query | Serverdaten laden, zwischenspeichern, alle 10 Sekunden auffrischen | `apps/web/src/app/queries.ts` |
-| Hono RPC-Client | Typsichere Aufrufe der API mit den Typen der API selbst | `apps/web/src/app/api.ts` |
-| Radix UI | Menüleiste, Kontextmenüs, Dialoge, Meldungen | `apps/web/src/shell/AppMenubar.tsx`, `apps/web/src/ui/` |
-| react-resizable-panels | Verschiebbare Navigation und Detailbereich | `apps/web/src/shell/AppShell.tsx`, `apps/web/src/shell/ViewFrame.tsx` |
-| react-oidc-context | Anmeldung über Cognito (Code-Flow mit PKCE) | `apps/web/src/app/session.tsx` |
-| Web Audio, AudioWorklet | Mikrofon und Lautsprecher im Testanruf | `apps/web/src/features/testcall/audio.ts`, `apps/web/public/recorder-worklet.js` |
-| CSS-Variablen | Gestaltung hell und dunkel | `apps/web/src/styles/` |
+| Technologie             | Wofür                                                              | Code                                                                             |
+| ----------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| React, Vite             | Single-Page-App, Entwicklungsserver und Build                      | `apps/web/src/main.tsx`, `apps/web/vite.config.ts`                               |
+| TanStack Router         | Ansichten und Adressen, auch für das Einstellungs-Sheet            | `apps/web/src/app/router.tsx`                                                    |
+| TanStack Query          | Serverdaten laden, zwischenspeichern, alle 10 Sekunden auffrischen | `apps/web/src/app/queries.ts`                                                    |
+| Hono RPC-Client         | Typsichere Aufrufe der API mit den Typen der API selbst            | `apps/web/src/app/api.ts`                                                        |
+| Radix UI                | Menüleiste, Kontextmenüs, Dialoge, Meldungen                       | `apps/web/src/shell/AppMenubar.tsx`, `apps/web/src/ui/`                          |
+| react-resizable-panels  | Verschiebbare Navigation und Detailbereich                         | `apps/web/src/shell/AppShell.tsx`, `apps/web/src/shell/ViewFrame.tsx`            |
+| react-oidc-context      | Anmeldung über Cognito (Code-Flow mit PKCE)                        | `apps/web/src/app/session.tsx`                                                   |
+| Web Audio, AudioWorklet | Mikrofon und Lautsprecher im Testanruf                             | `apps/web/src/features/testcall/audio.ts`, `apps/web/public/recorder-worklet.js` |
+| CSS-Variablen           | Gestaltung hell und dunkel                                         | `apps/web/src/styles/`                                                           |
 
 **API und Fachlogik**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| Zod | Schemas für Eingaben und Daten, gemeinsam für API, Oberfläche und Sprachagent | `packages/domain/src/` |
-| Hono | REST-API, je Bereich eine App (Einstellungen, Anrufe, Benutzer) | `services/api/src/admin/`, `services/api/src/calls/`, `services/api/src/users/` |
-| AWS Lambda, API Gateway | Betrieb der API, Prüfung der Anmeldung über Cognito | `services/api/src/*/handler.ts`, `infra/lib/api-stack.ts` |
-| Amazon Cognito | Benutzerkonten, Anmeldung mit Zwei-Faktor-Code | `services/api/src/users/directory.ts`, `infra/lib/auth-stack.ts` |
-| EventBridge Scheduler | Nächtliches Erzeugen der Terminslots | `services/api/src/scheduling/`, `infra/lib/api-stack.ts` |
-| Powertools for AWS Lambda | Strukturierte Protokolle ohne Patientendaten | `services/api/src/lib/app.ts` |
+| Technologie               | Wofür                                                                         | Code                                                                            |
+| ------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Zod                       | Schemas für Eingaben und Daten, gemeinsam für API, Oberfläche und Sprachagent | `packages/domain/src/`                                                          |
+| Hono                      | REST-API, je Bereich eine App (Einstellungen, Anrufe, Benutzer)               | `services/api/src/admin/`, `services/api/src/calls/`, `services/api/src/users/` |
+| AWS Lambda, API Gateway   | Betrieb der API, Prüfung der Anmeldung über Cognito                           | `services/api/src/*/handler.ts`, `infra/lib/api-stack.ts`                       |
+| Amazon Cognito            | Benutzerkonten, Anmeldung mit Zwei-Faktor-Code                                | `services/api/src/users/directory.ts`, `infra/lib/auth-stack.ts`                |
+| EventBridge Scheduler     | Nächtliches Erzeugen der Terminslots                                          | `services/api/src/scheduling/`, `infra/lib/api-stack.ts`                        |
+| Powertools for AWS Lambda | Strukturierte Protokolle ohne Patientendaten                                  | `services/api/src/lib/app.ts`                                                   |
 
 **Sprachagent**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| Amazon Nova 2.5 Sonic (Bedrock) | Das Gespräch selbst: Sprache rein, Sprache raus, Werkzeugaufrufe | `services/voice-agent/src/nova-sonic-model.ts` |
-| Amazon Polly | Feste Ansagen wortgenau (Begrüßung, 112, Verabschiedung) | `services/voice-agent/src/speech.ts`, `services/voice-agent/src/prompt.ts` |
-| WebSocket (`ws`) | Testanruf aus dem Browser | `services/voice-agent/src/server.ts` |
-| ECS Fargate | Dauerhaft laufender Container für die Gespräche | `services/voice-agent/Dockerfile`, `infra/lib/voice-stack.ts` |
+| Technologie                     | Wofür                                                            | Code                                                                       |
+| ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Amazon Nova 2.5 Sonic (Bedrock) | Das Gespräch selbst: Sprache rein, Sprache raus, Werkzeugaufrufe | `services/voice-agent/src/nova-sonic-model.ts`                             |
+| Amazon Polly                    | Feste Ansagen wortgenau (Begrüßung, 112, Verabschiedung)         | `services/voice-agent/src/speech.ts`, `services/voice-agent/src/prompt.ts` |
+| WebSocket (`ws`)                | Testanruf aus dem Browser                                        | `services/voice-agent/src/server.ts`                                       |
+| ECS Fargate                     | Dauerhaft laufender Container für die Gespräche                  | `services/voice-agent/Dockerfile`, `infra/lib/voice-stack.ts`              |
 
 **Telefonie**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| Amazon Chime SDK (SIP Media Application, Voice Connector) | Rufnummer, Annahme und Weiterleitung von Anrufen | `services/api/src/telephony/`, `infra/lib/telephony.ts` |
-| SIP, RTP, G.711 | Telefonleitung direkt im Sprachagenten, ohne Telefonanlage | `services/voice-agent/src/telephony/` |
+| Technologie                                               | Wofür                                                      | Code                                                    |
+| --------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| Amazon Chime SDK (SIP Media Application, Voice Connector) | Rufnummer, Annahme und Weiterleitung von Anrufen           | `services/api/src/telephony/`, `infra/lib/telephony.ts` |
+| SIP, RTP, G.711                                           | Telefonleitung direkt im Sprachagenten, ohne Telefonanlage | `services/voice-agent/src/telephony/`                   |
 
 **Daten**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| DynamoDB | Zwei Tabellen: Planung (Einstellungen, Slots, Benutzer, Protokoll) und Anrufe | `packages/data/src/keys.ts` (Schlüsselschema), `packages/data/src/` |
-| AWS KMS | Eigener Schlüssel für die Anruftabelle | `infra/lib/data-stack.ts` |
-| EventBridge Pipes | Ereignis bei neuem Anliegen, nur mit Kennungen | `infra/lib/data-stack.ts` |
-| Secrets Manager | Schlüssel für die Tickets des Testanrufs | `packages/data/src/ticket.ts`, `infra/lib/data-stack.ts` |
+| Technologie       | Wofür                                                                         | Code                                                                |
+| ----------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| DynamoDB          | Zwei Tabellen: Planung (Einstellungen, Slots, Benutzer, Protokoll) und Anrufe | `packages/data/src/keys.ts` (Schlüsselschema), `packages/data/src/` |
+| AWS KMS           | Eigener Schlüssel für die Anruftabelle                                        | `infra/lib/data-stack.ts`                                           |
+| EventBridge Pipes | Ereignis bei neuem Anliegen, nur mit Kennungen                                | `infra/lib/data-stack.ts`                                           |
+| Secrets Manager   | Schlüssel für die Tickets des Testanrufs                                      | `packages/data/src/ticket.ts`, `infra/lib/data-stack.ts`            |
 
 **Infrastruktur und Werkzeuge**
 
-| Technologie | Wofür | Code |
-| --- | --- | --- |
-| AWS CDK | Gesamte Infrastruktur als Code | `infra/bin/callisto.ts`, `infra/lib/` |
-| CloudFront, S3 | Auslieferung der Oberfläche; leitet `/v1` an die API und `/voice` an den Sprachagenten | `infra/lib/web-stack.ts` |
-| AWS WAF (optional) | Schutz der API | `infra/lib/api-stack.ts` |
-| Vitest | Tests aller Workspaces | `*/test/`, `vitest.config.ts` |
-| Biome | Lint und Formatierung | `biome.json` |
+| Technologie        | Wofür                                                                                  | Code                                  |
+| ------------------ | -------------------------------------------------------------------------------------- | ------------------------------------- |
+| AWS CDK            | Gesamte Infrastruktur als Code                                                         | `infra/bin/callisto.ts`, `infra/lib/` |
+| CloudFront, S3     | Auslieferung der Oberfläche; leitet `/v1` an die API und `/voice` an den Sprachagenten | `infra/lib/web-stack.ts`              |
+| AWS WAF (optional) | Schutz der API                                                                         | `infra/lib/api-stack.ts`              |
+| Vitest             | Tests aller Workspaces                                                                 | `*/test/`, `vitest.config.ts`         |
+| Biome              | Lint und Formatierung                                                                  | `biome.json`                          |
 
 ## Lokal entwickeln
 
