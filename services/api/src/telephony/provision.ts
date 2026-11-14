@@ -79,7 +79,7 @@ async function voiceConnector(
         Name: props.Name,
         AwsRegion: props.Region as VoiceConnectorAwsRegion,
         // Between Voice Connector and agent the audio stays on AWS's network; the phone network
-        // before it is unencrypted anyway. See docs/architektur.md.
+        // before it is unencrypted anyway. See docs/en/architecture.md.
         RequireEncryption: false,
       }),
     );

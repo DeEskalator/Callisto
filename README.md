@@ -2,9 +2,10 @@
 
 KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlage auf eine Nummer um; der Assistent nimmt Termine und Rezeptwünsche auf, verbindet bei sonstigen Anliegen mit der Praxis, erkennt Notfälle und kennt Sprechzeiten und Urlaub. Das Praxisteam sieht alle Anrufe in einer Weboberfläche und konfiguriert dort den Assistenten.
 
-- **Ausrollen in wenigen Schritten:** [docs/quickstart.md](docs/quickstart.md)
-- Konfiguration und Telefonie: [docs/konfiguration.md](docs/konfiguration.md)
-- Architektur und Entscheidungen: [docs/architektur.md](docs/architektur.md)
+- **Ausrollen in wenigen Schritten:** [docs/de/quickstart.md](docs/de/quickstart.md)
+- Konfiguration und Telefonie: [docs/de/konfiguration.md](docs/de/konfiguration.md)
+- Architektur und Entscheidungen: [docs/de/architektur.md](docs/de/architektur.md)
+- In English: [Quickstart](docs/en/quickstart.md), [Configuration](docs/en/configuration.md), [Architecture](docs/en/architecture.md)
 
 ## Aufbau
 
@@ -19,7 +20,7 @@ KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlag
 
 ## Technologien
 
-Alles ist TypeScript in npm-Workspaces. Patientendaten liegen in Frankfurt (`eu-central-1`), das Sprachmodell läuft in Stockholm (`eu-north-1`). Warum welche Wahl getroffen wurde, steht in [docs/architektur.md](docs/architektur.md).
+Alles ist TypeScript in npm-Workspaces. Patientendaten liegen in Frankfurt (`eu-central-1`), das Sprachmodell läuft in Stockholm (`eu-north-1`). Warum welche Wahl getroffen wurde, steht in [docs/de/architektur.md](docs/de/architektur.md).
 
 **Weboberfläche**
 
@@ -98,7 +99,7 @@ Der Entwicklungsserver öffnet außerdem eine Telefonleitung auf `sip:praxis@127
 
 ## Ausrollen auf AWS
 
-Schritt für Schritt: [docs/quickstart.md](docs/quickstart.md).
+Schritt für Schritt: [docs/de/quickstart.md](docs/de/quickstart.md).
 
 ```sh
 npm run synth        # Weboberfläche bauen, CloudFormation-Vorlagen erzeugen

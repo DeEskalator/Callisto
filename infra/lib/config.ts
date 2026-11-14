@@ -18,7 +18,7 @@ const DeploymentConfigSchema = z.object({
    * Whether the practice's data can be deleted. Affects exactly the two tables, the key of the
    * calls table and the user pool. On: they survive `cdk destroy` and resource replacement, and
    * tables and user pool have AWS deletion protection. Off: they are deleted with the stack.
-   * Nothing else (cost, security, app behaviour) depends on it. See docs/konfiguration.md.
+   * Nothing else (cost, security, app behaviour) depends on it. See docs/en/configuration.md.
    */
   production: z.boolean().default(false),
   /** The practice that is set up on the first deployment. */

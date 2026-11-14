@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: Oktober 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
+Stand: November 2026. Dieses Dokument hält fest, wie Callisto aufgebaut ist und warum.
 
 ## Grundidee
 
