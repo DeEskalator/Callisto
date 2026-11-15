@@ -1,6 +1,6 @@
 # Konfiguration einer Umgebung
 
-Eine Umgebung (z. B. `dev` oder `prod`) wird durch `infra/config.json` beschrieben. Die Datei wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Solange sie fehlt, wird `infra/config.example.json` verwendet.
+Eine Umgebung (z. B. `dev` oder `prod`) kann durch `infra/config.json` konfiguriert werden. Die Datei wird nicht eingecheckt, weil sie eine konkrete Praxis beschreibt. Als Vorlage kann `infra/config.example.json` verwendet werden.
 
 ```json
 {

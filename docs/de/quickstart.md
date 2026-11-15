@@ -11,7 +11,7 @@ Diese Anleitung führt vom leeren AWS-Konto bis zum ersten Testanruf. Eine eigen
 | Docker (läuft)                             | Container-Image des Sprachagenten; nur mit `"voice": true` | `docker info`                                    |
 | Nova 2.5 Sonic freigeschaltet              | Der Sprachagent; nur mit `"voice": true`                   | Bedrock-Konsole, Region Stockholm (`eu-north-1`) |
 
-Ein AWS-Profil richtest du z. B. mit `aws configure sso` oder `aws configure` ein.
+Ein AWS-Profil lässt sich mit `aws configure sso` oder `aws configure` einrichten.
 
 Abhängigkeiten installieren (im Projektordner):
 

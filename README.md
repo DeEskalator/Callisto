@@ -1,6 +1,6 @@
 # Callisto
 
-KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlage auf eine Nummer um; der Assistent nimmt Termine und Rezeptwünsche auf, verbindet bei sonstigen Anliegen mit der Praxis, erkennt Notfälle und kennt Sprechzeiten und Urlaub. Das Praxisteam sieht alle Anrufe in einer Weboberfläche und konfiguriert dort den Assistenten.
+KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlage auf eine Nummer um; der Assistent bucht Termine und nimmt Rezeptwünsche auf, verbindet bei sonstigen Anliegen mit der Praxis, erkennt Notfälle und kennt Sprechzeiten und Urlaub. Das Praxisteam sieht alle Anrufe in einer Weboberfläche, stellt Termine zur Buchung bereit und konfiguriert dort den Assistenten.
 
 - **Ausrollen in wenigen Schritten:** [docs/de/quickstart.md](docs/de/quickstart.md)
 - Konfiguration und Telefonie: [docs/de/konfiguration.md](docs/de/konfiguration.md)
