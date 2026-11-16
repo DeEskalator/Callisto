@@ -1,108 +1,109 @@
 # Callisto
 
-KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlage auf eine Nummer um; der Assistent bucht Termine und nimmt Rezeptwünsche auf, verbindet bei sonstigen Anliegen mit der Praxis, erkennt Notfälle und kennt Sprechzeiten und Urlaub. Das Praxisteam sieht alle Anrufe in einer Weboberfläche, stellt Termine zur Buchung bereit und konfiguriert dort den Assistenten.
+**English** · [Deutsch](README.de.md)
 
-- **Ausrollen in wenigen Schritten:** [docs/de/quickstart.md](docs/de/quickstart.md)
-- Konfiguration und Telefonie: [docs/de/konfiguration.md](docs/de/konfiguration.md)
-- Architektur und Entscheidungen: [docs/de/architektur.md](docs/de/architektur.md)
-- In English: [Quickstart](docs/en/quickstart.md), [Configuration](docs/en/configuration.md), [Architecture](docs/en/architecture.md)
+AI phone assistant for medical practices on AWS. The practice forwards its phone system to a number; the assistant books appointments and takes prescription requests, transfers other concerns to the practice, recognises emergencies and knows opening hours and vacations. The practice team sees all calls in a web app, makes appointments available for booking and configures the assistant there.
 
-## Aufbau
+- **Deploy in a few steps:** [docs/en/quickstart.md](docs/en/quickstart.md)
+- Configuration and telephony: [docs/en/configuration.md](docs/en/configuration.md)
+- Architecture and decisions: [docs/en/architecture.md](docs/en/architecture.md)
 
-| Ordner                 | Inhalt                                                                    |
-| ---------------------- | ------------------------------------------------------------------------- |
-| `packages/domain`      | Fachlogik ohne AWS: Schemas, Sprechzeiten, Feiertage, Terminslots, Rechte |
-| `packages/data`        | DynamoDB-Schlüsselschema und Repositories                                 |
-| `services/api`         | REST-API der Weboberfläche (Lambda hinter API Gateway)                    |
-| `services/voice-agent` | Sprachagent: Gesprächssitzung, Nova Sonic, Werkzeuge, Testmodus           |
-| `apps/web`             | Weboberfläche (React): Tagesgeschehen, Einstellungen, Testanruf           |
-| `infra`                | AWS-Infrastruktur als CDK-App                                             |
+## Structure
 
-## Technologien
+| Folder                 | Contents                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `packages/domain`      | Business logic without AWS: schemas, opening hours, public holidays, slots, permissions |
+| `packages/data`        | DynamoDB key schema and repositories                                                    |
+| `services/api`         | REST API of the web app (Lambda behind API Gateway)                                     |
+| `services/voice-agent` | Voice agent: conversation session, Nova Sonic, tools, test mode                         |
+| `apps/web`             | Web app (React): daily view, settings, test call                                        |
+| `infra`                | AWS infrastructure as a CDK app                                                         |
 
-Alles ist TypeScript in npm-Workspaces. Patientendaten liegen in Frankfurt (`eu-central-1`), das Sprachmodell läuft in Stockholm (`eu-north-1`). Warum welche Wahl getroffen wurde, steht in [docs/de/architektur.md](docs/de/architektur.md).
+## Technologies
 
-**Weboberfläche**
+Everything is TypeScript in npm workspaces. Patient data lives in Frankfurt (`eu-central-1`), the language model runs in Stockholm (`eu-north-1`). Why each choice was made is explained in [docs/en/architecture.md](docs/en/architecture.md).
 
-| Technologie             | Wofür                                                              |
-| ----------------------- | ------------------------------------------------------------------ |
-| React, Vite             | Single-Page-App, Entwicklungsserver und Build                      |
-| TanStack Router         | Ansichten und Adressen, auch für das Einstellungs-Sheet            |
-| TanStack Query          | Serverdaten laden, zwischenspeichern, alle 10 Sekunden auffrischen |
-| Hono RPC-Client         | Typsichere Aufrufe der API mit den Typen der API selbst            |
-| Radix UI                | Menüleiste, Kontextmenüs, Dialoge, Meldungen                       |
-| react-resizable-panels  | Verschiebbare Navigation und Detailbereich                         |
-| react-oidc-context      | Anmeldung über Cognito (Code-Flow mit PKCE)                        |
-| Web Audio, AudioWorklet | Mikrofon und Lautsprecher im Testanruf                             |
-| CSS-Variablen           | Gestaltung hell und dunkel                                         |
+**Web app**
 
-**API und Fachlogik**
+| Technology              | What for                                                     |
+| ----------------------- | ------------------------------------------------------------ |
+| React, Vite             | Single-page app, development server and build                |
+| TanStack Router         | Views and URLs, including the settings sheet                 |
+| TanStack Query          | Loading, caching and refreshing server data every 10 seconds |
+| Hono RPC client         | Type-safe API calls using the API's own types                |
+| Radix UI                | Menu bar, context menus, dialogs, toasts                     |
+| react-resizable-panels  | Resizable navigation and detail pane                         |
+| react-oidc-context      | Sign-in through Cognito (authorization code flow with PKCE)  |
+| Web Audio, AudioWorklet | Microphone and speaker in the test call                      |
+| CSS variables           | Light and dark styling                                       |
 
-| Technologie               | Wofür                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| Zod                       | Schemas für Eingaben und Daten, gemeinsam für API, Oberfläche und Sprachagent |
-| Hono                      | REST-API, je Bereich eine App (Einstellungen, Anrufe, Benutzer)               |
-| AWS Lambda, API Gateway   | Betrieb der API, Prüfung der Anmeldung über Cognito                           |
-| Amazon Cognito            | Benutzerkonten, Anmeldung mit Zwei-Faktor-Code                                |
-| EventBridge Scheduler     | Nächtliches Erzeugen der Terminslots                                          |
-| Powertools for AWS Lambda | Strukturierte Protokolle ohne Patientendaten                                  |
+**API and business logic**
 
-**Sprachagent**
+| Technology                | What for                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| Zod                       | Schemas for input and data, shared by the API, the web app and the voice agent |
+| Hono                      | REST API, one app per area (settings, calls, users)                            |
+| AWS Lambda, API Gateway   | Running the API, checking sign-in through Cognito                              |
+| Amazon Cognito            | User accounts, sign-in with a two-factor code                                  |
+| EventBridge Scheduler     | Generating appointment slots every night                                       |
+| Powertools for AWS Lambda | Structured logs without patient data                                           |
 
-| Technologie                     | Wofür                                                            |
-| ------------------------------- | ---------------------------------------------------------------- |
-| Amazon Nova 2.5 Sonic (Bedrock) | Das Gespräch selbst: Sprache rein, Sprache raus, Werkzeugaufrufe |
-| Amazon Polly                    | Feste Ansagen wortgenau (Begrüßung, 112, Verabschiedung)         |
-| WebSocket (`ws`)                | Testanruf aus dem Browser                                        |
-| ECS Fargate                     | Dauerhaft laufender Container für die Gespräche                  |
+**Voice agent**
 
-**Telefonie**
+| Technology                      | What for                                                    |
+| ------------------------------- | ----------------------------------------------------------- |
+| Amazon Nova 2.5 Sonic (Bedrock) | The conversation itself: speech in, speech out, tool calls  |
+| Amazon Polly                    | Fixed announcements word for word (greeting, 112, farewell) |
+| WebSocket (`ws`)                | Test call from the browser                                  |
+| ECS Fargate                     | Always-on container for the conversations                   |
 
-| Technologie                                               | Wofür                                                      |
-| --------------------------------------------------------- | ---------------------------------------------------------- |
-| Amazon Chime SDK (SIP Media Application, Voice Connector) | Rufnummer, Annahme und Weiterleitung von Anrufen           |
-| SIP, RTP, G.711                                           | Telefonleitung direkt im Sprachagenten, ohne Telefonanlage |
+**Telephony**
 
-**Daten**
+| Technology                                                | What for                                              |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| Amazon Chime SDK (SIP Media Application, Voice Connector) | Phone number, answering and transferring calls        |
+| SIP, RTP, G.711                                           | Phone line directly in the voice agent, without a PBX |
 
-| Technologie       | Wofür                                                                         |
-| ----------------- | ----------------------------------------------------------------------------- |
-| DynamoDB          | Zwei Tabellen: Planung (Einstellungen, Slots, Benutzer, Protokoll) und Anrufe |
-| AWS KMS           | Eigener Schlüssel für die Anruftabelle                                        |
-| EventBridge Pipes | Ereignis bei neuem Anliegen, nur mit Kennungen                                |
-| Secrets Manager   | Schlüssel für die Tickets des Testanrufs                                      |
+**Data**
 
-**Infrastruktur und Werkzeuge**
+| Technology        | What for                                                           |
+| ----------------- | ------------------------------------------------------------------ |
+| DynamoDB          | Two tables: planning (settings, slots, users, audit log) and calls |
+| AWS KMS           | Dedicated key for the call table                                   |
+| EventBridge Pipes | An event for every new inquiry, with IDs only                      |
+| Secrets Manager   | Key for the test call tickets                                      |
 
-| Technologie        | Wofür                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| AWS CDK            | Gesamte Infrastruktur als Code                                                         |
-| CloudFront, S3     | Auslieferung der Oberfläche; leitet `/v1` an die API und `/voice` an den Sprachagenten |
-| AWS WAF (optional) | Schutz der API                                                                         |
-| Vitest             | Tests aller Workspaces                                                                 |
-| Biome              | Lint und Formatierung                                                                  |
+**Infrastructure and tooling**
 
-## Lokal entwickeln
+| Technology         | What for                                                                     |
+| ------------------ | ---------------------------------------------------------------------------- |
+| AWS CDK            | The entire infrastructure as code                                            |
+| CloudFront, S3     | Serving the web app; routes `/v1` to the API and `/voice` to the voice agent |
+| AWS WAF (optional) | Protecting the API                                                           |
+| Vitest             | Tests of all workspaces                                                      |
+| Biome              | Linting and formatting                                                       |
 
-Ohne AWS-Konto: API und Sprachagent laufen in einem Prozess auf Daten im Arbeitsspeicher, mit einer Beispielpraxis und erfundenen Anrufen des Tages. Eine Anmeldung gibt es lokal nicht; oben rechts lässt sich zwischen zwei Beispielbenutzern (Administration, Praxisteam) wechseln.
+## Local development
+
+No AWS account needed: API and voice agent run in one process on in-memory data, with a sample practice and made-up calls of the day. There is no sign-in locally; at the top right you can switch between two sample users (administration, practice team).
 
 ```sh
-npm install          # Abhängigkeiten aller Workspaces
-npm run dev:api      # API und Sprachagent auf http://localhost:8787
-npm run dev:web      # Weboberfläche auf http://localhost:5173
-npm run check        # Lint, Typprüfung und Tests
+npm install          # dependencies of all workspaces
+npm run dev:api      # API and voice agent on http://localhost:8787
+npm run dev:web      # web app on http://localhost:5173
+npm run check        # lint, type check and tests
 ```
 
-Den Assistenten spielt lokal ein Skript, das getippte Stichworte versteht („Termin“, „Rezept“, „Sprechzeiten“ …). Mit `CALLISTO_MODEL=nova npm run dev:api` spricht der Testanruf stattdessen mit Nova Sonic auf Bedrock; dafür werden AWS-Zugangsdaten in der Shell und der freigeschaltete Modellzugriff in Stockholm gebraucht.
+Locally, the assistant is played by a script that understands typed keywords ("Termin", "Rezept", "Sprechzeiten" …). With `CALLISTO_MODEL=nova npm run dev:api`, the test call talks to Nova Sonic on Bedrock instead; this requires AWS credentials in the shell and model access enabled in Stockholm.
 
-Der Entwicklungsserver öffnet außerdem eine Telefonleitung auf `sip:praxis@127.0.0.1:5060` (SIP über UDP, G.711). Ein Softphone wie Linphone ruft dort an wie ein Patient. Für gesprochene Antworten braucht es `CALLISTO_MODEL=nova`, denn das Skript versteht keine Sprache.
+The development server also opens a phone line on `sip:praxis@127.0.0.1:5060` (SIP over UDP, G.711). A softphone such as Linphone calls there like a patient. Spoken answers require `CALLISTO_MODEL=nova`, because the script does not understand speech.
 
-## Ausrollen auf AWS
+## Deploying on AWS
 
-Schritt für Schritt: [docs/de/quickstart.md](docs/de/quickstart.md).
+Step by step: [docs/en/quickstart.md](docs/en/quickstart.md).
 
 ```sh
-npm run synth        # Weboberfläche bauen, CloudFormation-Vorlagen erzeugen
-npm run diff         # Unterschied zum ausgerollten Stand
-npm run deploy       # alle Stacks ausrollen
+npm run synth        # build the web app, generate CloudFormation templates
+npm run diff         # difference to the deployed state
+npm run deploy       # deploy all stacks
 ```
