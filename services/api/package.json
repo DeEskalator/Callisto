@@ -13,16 +13,16 @@
     "dev": "tsx watch src/dev/server.ts"
   },
   "dependencies": {
-    "@aws-lambda-powertools/logger": "^2.35.0",
-    "@aws-sdk/client-chime-sdk-voice": "^3.1146.0",
-    "@aws-sdk/client-cognito-identity-provider": "^3.1146.0",
-    "@aws-sdk/client-secrets-manager": "^3.1146.0",
+    "@aws-lambda-powertools/logger": "^2.36.0",
+    "@aws-sdk/client-chime-sdk-voice": "^3.1169.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1169.0",
+    "@aws-sdk/client-secrets-manager": "^3.1169.0",
     "@callisto/data": "*",
     "@callisto/domain": "*",
-    "@hono/aws-lambda": "^1.0.0",
+    "@hono/aws-lambda": "^1.0.1",
     "@hono/zod-validator": "^0.9.1",
-    "hono": "^4.13.13",
-    "zod": "^4.6.5"
+    "hono": "^4.13.18",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@callisto/voice-agent": "*",
