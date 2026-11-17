@@ -8,6 +8,22 @@ AI phone assistant for medical practices on AWS. The practice forwards its phone
 - Configuration and telephony: [docs/en/configuration.md](docs/en/configuration.md)
 - Architecture and decisions: [docs/en/architecture.md](docs/en/architecture.md)
 
+## Screenshots
+
+The daily view: open inquiries with their details and the conversation that led to them.
+
+![Inquiries with details and conversation](docs/screenshots/en/inquiries.png)
+
+The calendar in the settings: the slots of a week, generated from templates, with a booked appointment selected.
+
+![Calendar week with slots](docs/screenshots/en/calendar.png)
+
+The opening hours, set by dragging across a week grid in half-hour steps.
+
+![Opening hours grid](docs/screenshots/en/opening-hours.png)
+
+The interface is available in English and German (View → Language).
+
 ## Structure
 
 | Folder                 | Contents                                                                                |

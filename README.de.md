@@ -8,6 +8,22 @@ KI-Telefonassistent für Arztpraxen auf AWS. Die Praxis leitet ihre Telefonanlag
 - Konfiguration und Telefonie: [docs/de/konfiguration.md](docs/de/konfiguration.md)
 - Architektur und Entscheidungen: [docs/de/architektur.md](docs/de/architektur.md)
 
+## Screenshots
+
+Das Tagesgeschehen: offene Anliegen mit ihren Details und dem Gespräch, aus dem sie entstanden sind.
+
+![Anliegen mit Details und Gespräch](docs/screenshots/de/anliegen.png)
+
+Der Kalender in den Einstellungen: die aus Vorlagen erzeugten Slots einer Woche, ein gebuchter Termin ist ausgewählt.
+
+![Kalenderwoche mit Slots](docs/screenshots/de/kalender.png)
+
+Die Sprechzeiten, eingestellt durch Ziehen über ein Wochenraster in halben Stunden.
+
+![Raster der Sprechzeiten](docs/screenshots/de/sprechzeiten.png)
+
+Die Oberfläche gibt es auf Deutsch und Englisch (Ansicht → Sprache).
+
 ## Aufbau
 
 | Ordner                 | Inhalt                                                                    |
